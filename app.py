@@ -9,6 +9,7 @@ from wtforms.validators import ValidationError, NumberRange,InputRequired,Length
 from flask_wtf.file import FileField, FileRequired, file_allowed
 from coolname import generate_slug
 import pandas as pd
+from objective import ObjectiveTest
 
 app = Flask(__name__)
 
@@ -93,8 +94,25 @@ def create_test():
 		# cur.close()
 		flash(f'Exam ID: {test_id}', 'success')
 		return redirect(url_for('professor_index'))
-	flash(f'Exam ID success')
 	return render_template('create_test.html', form = form)
+
+@app.route('/generate_test')
+def generate_test():
+	return render_template('generate_test.html')
+
+@app.route('/test_generate', methods=["GET", "POST"])
+def test_generate():
+	if request.method == "POST":
+		inputText = request.form["itext"]
+		testType = request.form["test_type"]
+		noOfQues = request.form["noq"]
+		if testType == "objective":
+			objective_generator = ObjectiveTest(inputText,noOfQues)
+			question_list, answer_list = objective_generator.generate_test()
+			testgenerate = zip(question_list, answer_list)
+			return render_template('generatedtestdata.html', cresults = testgenerate)
+		else:
+			return None
 
 if __name__ == "__main__":
 	app.run()
