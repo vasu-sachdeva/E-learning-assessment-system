@@ -1,15 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 from flask_mysqldb import MySQL
-from werkzeug.utils import secure_filename
+# from werkzeug.utils import secure_filename
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators, DateTimeField, BooleanField, IntegerField, DecimalField, HiddenField, SelectField, RadioField
 from flask_wtf import FlaskForm
 from wtforms.fields import DateField, TimeField
 from datetime import timedelta, datetime
 from wtforms.validators import ValidationError, NumberRange,InputRequired,Length
-from flask_wtf.file import FileField, FileRequired, file_allowed
+from flask_wtf.file import FileField, FileRequired, FileAllowed
 from coolname import generate_slug
 import pandas as pd
-from objective import ObjectiveTest
+from objective import ObjectiveTest	
 
 app = Flask(__name__)
 
@@ -20,13 +20,54 @@ app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = 'quizapp'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
+# app.config['MAIL_SERVER']='stackmail.gmail.com'
+# app.config['MAIL_PORT'] = 587
+# app.config['MAIL_USERNAME'] = '20ucs068@lnmiit.ac.in'
+# app.config['MAIL_PASSWORD'] = 'Sonu$$2106'
+# app.config['MAIL_USE_TLS'] = True
+# app.config['MAIL_USE_SSL'] = False
+
 app.secret_key = 'cvproject'
 mysql = MySQL(app)
+# mail = Mail(app)
+
+# sender = '20ucs068@lnmiit.ac.in'
+
+# def generateOTP() : 
+#     digits = "0123456789"
+#     OTP = "" 
+#     for i in range(5) : 
+#         OTP += digits[math.floor(random.random() * 10)] 
+#     return OTP 
+
+# @app.route("/register", methods=['GET','POST'])
+# def register():
+# 	if request.method == 'POST':
+# 		name = request.form['name']
+# 		email = request.form['email']
+# 		password = request.form['password']
+# 		user_type = request.form['user_type']
+# 		imgdata = request.form['image_hidden']
+# 		session.clear()
+# 		session['tempName'] = name
+# 		session['tempEmail'] = email
+# 		session['tempPassword'] = password
+# 		session['tempUT'] = user_type
+# 		session['tempImage'] = imgdata
+# 		sesOTP = generateOTP()
+# 		session['tempOTP'] = sesOTP
+# 		msg1 = Message('MyProctor.ai - OTP Verification', sender = sender, recipients = [email])
+# 		msg1.body = "New Account opening - Your OTP Verfication code is "+sesOTP+"."
+# 		mail.send(msg1)
+# 		return redirect(url_for('verifyEmail')) 
+# 	return render_template('register.html')
+uid = 123456
+email = "abc@abc.com"
 
 class UploadForm(FlaskForm):
 	subject = StringField('Subject',validators=[InputRequired(message="required")])
 	topic = StringField('Topic')
-	# doc = FileField('CSV Upload', validators=[FileRequired()])
+	doc = FileField('CSV Upload', validators=[FileRequired()])
 	start_date = DateField('Start Date')
 	start_time = TimeField('Start Time', default=datetime.utcnow()+timedelta(hours=5.5))
 	end_date = DateField('End Date')
@@ -62,18 +103,18 @@ def professor_index():
 def create_test():
 	form = UploadForm()
 	if request.method=='POST' and form.validate_on_submit():
-		# print(form.errors)
 		test_id = generate_slug(2)
 		# filename = secure_filename(form.doc.data.filename)
-		# filestream = form.doc.data
-		# filestream.seek(0)
-		# ef = pd.read_csv(filestream)
-		# fields = ['qid','q','marks']
-		# df = pd.DataFrame(ef, columns = fields)
-		# cur = mysql.connection.cursor()
-		# for row in df.index:
-		# 	cur.execute('INSERT INTO questions(test_id,qid,q,a,b,c,d,ans,marks,uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', (test_id, df['qid'][row], df['q'][row], df['a'][row], df['b'][row], df['c'][row], df['d'][row], df['ans'][row], df['marks'][row], session['uid']))
-		# 	cur.connection.commit()
+		filestream = form.doc.data
+		filestream.seek(0)
+		ef = pd.read_csv(filestream)
+		fields = ['qid','q','a','b','c','d','ans','marks']
+		df = pd.DataFrame(ef, columns = fields)
+		print(df)
+		cur = mysql.connection.cursor()
+		for row in df.index:
+			cur.execute('INSERT INTO questions(test_id,qid,q,a,b,c,d,ans,marks,uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', (test_id, df['qid'][row], df['q'][row], df['a'][row], df['b'][row], df['c'][row], df['d'][row], df['ans'][row], df['marks'][row], uid))
+			cur.connection.commit()
 		start_date = form.start_date.data
 		end_date = form.end_date.data
 		start_time = form.start_time.data
@@ -89,9 +130,12 @@ def create_test():
 		# print(form.subject.errors)
 		# proctor_type = form.proctor_type.data
 		print(start_date, end_date, start_time, end_time, start_date_time, end_date_time, neg_mark, calc, duration, password, subject, topic)
-		
-		# Here queries of database will bew written #
-		# cur.close()
+		cur.execute('INSERT INTO teachers (email, test_id, test_type, start, end, duration, show_ans, password, subject, topic, neg_marks, calc, uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+			(email, test_id, "objective", start_date_time, end_date_time, duration, 1, password, subject, topic, neg_mark, calc, uid))
+		mysql.connection.commit()
+		cur.execute('UPDATE users SET examcredits = examcredits-1 where email = %s and uid = %s', (email,uid))
+		mysql.connection.commit()
+		cur.close()
 		flash(f'Exam ID: {test_id}', 'success')
 		return redirect(url_for('professor_index'))
 	return render_template('create_test.html', form = form)
