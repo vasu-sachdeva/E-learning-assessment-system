@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash,session, redirect
 from flask_session import Session
 from flask_mysqldb import MySQL
+from flask_mail import Mail, Message
+import math, random 
 # from werkzeug.utils import secure_filename
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators, DateTimeField, BooleanField, IntegerField, DecimalField, HiddenField, SelectField, RadioField
 from flask_wtf import FlaskForm
@@ -65,6 +67,7 @@ mysql = MySQL(app)
 # 	return render_template('register.html')
 uid = 123456
 email = "abc@abc.com"
+sender = 'youremail@abc.com'
 
 def user_role_professor(f):
     @wraps(f)
@@ -111,50 +114,88 @@ class UploadForm(FlaskForm):
 def index():
 	return render_template('index.html', messages = 'My name is proctor')
 
-@app.route('/login', methods=['GET','POST'])
-def login():
+
+
+# @app.route('/login', methods=['GET','POST'])
+# def login():
+# 	if request.method == 'POST':
+# 		email = request.form['email']
+# 		password_candidate = request.form['password']
+# 		user_type = request.form['user_type']
+# 		imgdata1 = request.form['image_hidden']
+# 		cur = mysql.connection.cursor()
+# 		results1 = cur.execute('SELECT uid, name, email, password, user_type, user_image from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
+# 		if results1 > 0:
+# 			cresults = cur.fetchone()
+# 			imgdata2 = cresults['user_image']
+# 			password = cresults['password']
+# 			name = cresults['name']
+# 			uid = cresults['uid']
+# 			nparr1 = np.frombuffer(base64.b64decode(imgdata1), np.uint8)
+# 			nparr2 = np.frombuffer(base64.b64decode(imgdata2), np.uint8)
+# 			image1 = cv2.imdecode(nparr1, cv2.COLOR_BGR2GRAY)
+# 			image2 = cv2.imdecode(nparr2, cv2.COLOR_BGR2GRAY)
+# 			img_result  = DeepFace.verify(image1, image2, enforce_detection = False)
+# 			if img_result["verified"] == True and password == password_candidate:
+# 				results2 = cur.execute('UPDATE users set user_login = 1 where email = %s' , [email])
+# 				mysql.connection.commit()
+# 				if results2 > 0:
+# 					session['logged_in'] = True
+# 					session['email'] = email
+# 					session['name'] = name
+# 					session['user_role'] = user_type
+# 					session['uid'] = uid
+# 					if user_type == "student":
+# 						return redirect(url_for('student_index'))
+# 					else:
+# 						return redirect(url_for('professor_index'))
+# 				else:
+# 					error = 'Error Occurred!'
+# 					return render_template('login.html', error=error)	
+# 			else:
+# 				error = 'Either Image not Verified or you have entered Invalid password or Already login'
+# 				return render_template('login.html', error=error)
+# 			cur.close()
+# 		else:
+# 			error = 'Already Login or Email was not found!'
+# 			return render_template('login.html', error=error)
+# 	return render_template('login.html')
+
+def generateOTP() : 
+    digits = "0123456789"
+    OTP = "" 
+    for i in range(5) : 
+        OTP += digits[math.floor(random.random() * 10)] 
+    return OTP 
+
+@app.route('/verifyEmail', methods=['GET','POST'])
+def verifyEmail():
 	if request.method == 'POST':
-		email = request.form['email']
-		password_candidate = request.form['password']
-		user_type = request.form['user_type']
-		imgdata1 = request.form['image_hidden']
-		cur = mysql.connection.cursor()
-		results1 = cur.execute('SELECT uid, name, email, password, user_type, user_image from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
-		if results1 > 0:
-			cresults = cur.fetchone()
-			imgdata2 = cresults['user_image']
-			password = cresults['password']
-			name = cresults['name']
-			uid = cresults['uid']
-			nparr1 = np.frombuffer(base64.b64decode(imgdata1), np.uint8)
-			nparr2 = np.frombuffer(base64.b64decode(imgdata2), np.uint8)
-			image1 = cv2.imdecode(nparr1, cv2.COLOR_BGR2GRAY)
-			image2 = cv2.imdecode(nparr2, cv2.COLOR_BGR2GRAY)
-			img_result  = DeepFace.verify(image1, image2, enforce_detection = False)
-			if img_result["verified"] == True and password == password_candidate:
-				results2 = cur.execute('UPDATE users set user_login = 1 where email = %s' , [email])
-				mysql.connection.commit()
-				if results2 > 0:
-					session['logged_in'] = True
-					session['email'] = email
-					session['name'] = name
-					session['user_role'] = user_type
-					session['uid'] = uid
-					if user_type == "student":
-						return redirect(url_for('student_index'))
-					else:
-						return redirect(url_for('professor_index'))
-				else:
-					error = 'Error Occurred!'
-					return render_template('login.html', error=error)	
+		theOTP = request.form['eotp']
+		mOTP = session['tempOTP']
+		dbName = session['tempName']
+		dbEmail = session['tempEmail']
+		dbPassword = session['tempPassword']
+		dbUser_type = session['tempUT']
+		dbImgdata = session['tempImage']
+		if(theOTP == mOTP):
+			cur = mysql.connection.cursor()
+			ar = cur.execute('INSERT INTO users(name, email, password, user_type, user_image, user_login) values(%s,%s,%s,%s,%s,%s)', (dbName, dbEmail, dbPassword, dbUser_type, dbImgdata,0))
+			mysql.connection.commit()
+			if ar > 0:
+				flash("Thanks for registering! You are sucessfully verified!.")
+				return  redirect(url_for('login'))
 			else:
-				error = 'Either Image not Verified or you have entered Invalid password or Already login'
-				return render_template('login.html', error=error)
+				flash("Error Occurred!")
+				return  redirect(url_for('login')) 
 			cur.close()
+			session.clear()
 		else:
-			error = 'Already Login or Email was not found!'
-			return render_template('login.html', error=error)
-	return render_template('login.html')
+			return render_template('register.html',error="OTP is incorrect.")
+	return render_template('verifyEmail.html')
+
+
+
 
 @app.route("/professor_index")
 def professor_index():
@@ -220,10 +261,10 @@ def test_generate():
 			return None
 
 @app.route('/deltidlist', methods=['GET'])
-@user_role_professor
+# @user_role_professor
 def deltidlist():
 	cur = mysql.connection.cursor()
-	results = cur.execute('SELECT * from teachers where email = %s and uid = %s', (session['email'], session['uid']))
+	results = cur.execute('SELECT * from teachers where email = %s and uid = %s', (email,uid))
 	if results > 0:
 		cresults = cur.fetchall()
 		now = datetime.now()
@@ -237,6 +278,7 @@ def deltidlist():
 		return render_template("deltidlist.html", cresults = testids)
 	else:
 		return render_template("deltidlist.html", cresults = None)
+
 
 @app.route('/deldispques', methods=['GET','POST'])
 @user_role_professor
@@ -265,5 +307,90 @@ def deldispques():
 		else:
 			flash("Some Error Occured!")
 			return redirect(url_for('/deltidlist'))
+
+@app.route('/delete_questions/<testid>', methods=['GET', 'POST'])
+@user_role_professor
+def delete_questions(testid):
+	et = examtypecheck(testid)
+	if et['test_type'] == "objective":
+		cur = mysql.connection.cursor()
+		msg = '' 
+		if request.method == 'POST':
+			testqdel = request.json['qids']
+			if testqdel:
+				if ',' in testqdel:
+					testqdel = testqdel.split(',')
+					for getid in testqdel:
+						cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,getid,session['uid']))
+						mysql.connection.commit()
+					resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
+					resp.status_code = 200
+					return resp
+				else:
+					cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,testqdel,session['uid']))
+					mysql.connection.commit()
+					resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
+					resp.status_code = 200
+					return resp
+	elif et['test_type'] == "subjective":
+		cur = mysql.connection.cursor()
+		msg = '' 
+		if request.method == 'POST':
+			testqdel = request.json['qids']
+			if testqdel:
+				if ',' in testqdel:
+					testqdel = testqdel.split(',')
+					for getid in testqdel:
+						cur.execute('DELETE FROM longqa WHERE test_id = %s and qid =%s and uid = %s', (testid,getid,session['uid']))
+						mysql.connection.commit()
+					resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
+					resp.status_code = 200
+					return resp
+				else:
+					cur.execute('DELETE FROM longqa WHERE test_id = %s and qid =%s and uid = %s', (testid,testqdel,session['uid']))
+					mysql.connection.commit()
+					resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
+					resp.status_code = 200
+					return resp
+	elif et['test_type'] == "practical":
+		cur = mysql.connection.cursor()
+		msg = '' 
+		if request.method == 'POST':
+			testqdel = request.json['qids']
+			if testqdel:
+				if ',' in testqdel:
+					testqdel = testqdel.split(',')
+					for getid in testqdel:
+						cur.execute('DELETE FROM practicalqa WHERE test_id = %s and qid =%s and uid = %s', (testid,getid,session['uid']))
+						mysql.connection.commit()
+					resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
+					resp.status_code = 200
+					return resp
+			else:
+				cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,testqdel,session['uid']))
+				mysql.connection.commit()
+				resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
+				resp.status_code = 200
+				return resp
+	else:
+		flash("Some Error Occured!")
+		return redirect(url_for('/deltidlist'))
+
+
+@app.route('/<testid>/<qid>')
+@user_role_professor
+def del_qid(testid, qid):
+	cur = mysql.connection.cursor()
+	results = cur.execute('DELETE FROM questions where test_id = %s and qid = %s and uid = %s', (testid,qid,session['uid']))
+	mysql.connection.commit()
+	if results>0:
+		msg="Deleted successfully"
+		flash('Deleted successfully.', 'success')
+		cur.close()
+		return render_template("deldispques.html", success=msg)
+	else:
+		return redirect(url_for('/deldispques'))
+
+
 if __name__ == "__main__":
 	app.run()
