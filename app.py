@@ -83,6 +83,15 @@ def user_role_professor(f):
             return redirect(url_for('login'))
     return wrap
 
+
+def examtypecheck(tidoption):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT test_type from teachers where test_id = %s and email = %s and uid = %s', (tidoption,session['email'],session['uid']))
+	callresults = cur.fetchone()
+	cur.close()
+	return callresults
+
+
 class UploadForm(FlaskForm):
 	subject = StringField('Subject',validators=[InputRequired(message="required")])
 	topic = StringField('Topic')

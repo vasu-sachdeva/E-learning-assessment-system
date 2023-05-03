@@ -134,6 +134,32 @@ CREATE TABLE `users` (
   `examcredits` int NOT NULL DEFAULT '7'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+INSERT INTO `quizapp`.`users`
+(`uid`,
+`name`,
+`email`,
+`password`,
+`user_type`,
+`user_image`,
+`user_login`)
+VALUES
+(123456,'Manav','abc@abc.com','lnm','professor','adasdkjdhadkhksdhkjadhkjadhk',2);
+
+SELECT `questions`.`questions_uid`,
+    `questions`.`test_id`,
+    `questions`.`qid`,
+    `questions`.`q`,
+    `questions`.`a`,
+    `questions`.`b`,
+    `questions`.`c`,
+    `questions`.`d`,
+    `questions`.`ans`,
+    `questions`.`marks`,
+    `questions`.`uid`
+FROM `quizapp`.`questions`;
+
+
+
 -- --------------------------------------------------------
 
 --
@@ -149,6 +175,8 @@ CREATE TABLE `window_estimation_log` (
   `transaction_log` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `uid` bigint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+select * from teachers;
 
 --
 -- Indexes for dumped tables
