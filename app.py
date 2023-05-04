@@ -24,47 +24,9 @@ app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = 'quizapp'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
-# app.config['MAIL_SERVER']='stackmail.gmail.com'
-# app.config['MAIL_PORT'] = 587
-# app.config['MAIL_USERNAME'] = '20ucs068@lnmiit.ac.in'
-# app.config['MAIL_PASSWORD'] = 'Sonu$$2106'
-# app.config['MAIL_USE_TLS'] = True
-# app.config['MAIL_USE_SSL'] = False
-
 app.secret_key = 'cvproject'
 mysql = MySQL(app)
-# mail = Mail(app)
 
-# sender = '20ucs068@lnmiit.ac.in'
-
-# def generateOTP() : 
-#     digits = "0123456789"
-#     OTP = "" 
-#     for i in range(5) : 
-#         OTP += digits[math.floor(random.random() * 10)] 
-#     return OTP 
-
-# @app.route("/register", methods=['GET','POST'])
-# def register():
-# 	if request.method == 'POST':
-# 		name = request.form['name']
-# 		email = request.form['email']
-# 		password = request.form['password']
-# 		user_type = request.form['user_type']
-# 		imgdata = request.form['image_hidden']
-# 		session.clear()
-# 		session['tempName'] = name
-# 		session['tempEmail'] = email
-# 		session['tempPassword'] = password
-# 		session['tempUT'] = user_type
-# 		session['tempImage'] = imgdata
-# 		sesOTP = generateOTP()
-# 		session['tempOTP'] = sesOTP
-# 		msg1 = Message('MyProctor.ai - OTP Verification', sender = sender, recipients = [email])
-# 		msg1.body = "New Account opening - Your OTP Verfication code is "+sesOTP+"."
-# 		mail.send(msg1)
-# 		return redirect(url_for('verifyEmail')) 
-# 	return render_template('register.html')
 uid = 123456
 email = "abc@abc.com"
 sender = 'youremail@abc.com'
@@ -82,15 +44,6 @@ def user_role_professor(f):
             flash('Unauthorized, Please login!','danger')
             return redirect(url_for('login'))
     return wrap
-
-
-def examtypecheck(tidoption):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT test_type from teachers where test_id = %s and email = %s and uid = %s', (tidoption,session['email'],session['uid']))
-	callresults = cur.fetchone()
-	cur.close()
-	return callresults
-
 
 class UploadForm(FlaskForm):
 	subject = StringField('Subject',validators=[InputRequired(message="required")])
@@ -122,53 +75,6 @@ class UploadForm(FlaskForm):
 @app.route("/")
 def index():
 	return render_template('index.html', messages = 'My name is proctor')
-
-
-
-# @app.route('/login', methods=['GET','POST'])
-# def login():
-# 	if request.method == 'POST':
-# 		email = request.form['email']
-# 		password_candidate = request.form['password']
-# 		user_type = request.form['user_type']
-# 		imgdata1 = request.form['image_hidden']
-# 		cur = mysql.connection.cursor()
-# 		results1 = cur.execute('SELECT uid, name, email, password, user_type, user_image from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
-# 		if results1 > 0:
-# 			cresults = cur.fetchone()
-# 			imgdata2 = cresults['user_image']
-# 			password = cresults['password']
-# 			name = cresults['name']
-# 			uid = cresults['uid']
-# 			nparr1 = np.frombuffer(base64.b64decode(imgdata1), np.uint8)
-# 			nparr2 = np.frombuffer(base64.b64decode(imgdata2), np.uint8)
-# 			image1 = cv2.imdecode(nparr1, cv2.COLOR_BGR2GRAY)
-# 			image2 = cv2.imdecode(nparr2, cv2.COLOR_BGR2GRAY)
-# 			img_result  = DeepFace.verify(image1, image2, enforce_detection = False)
-# 			if img_result["verified"] == True and password == password_candidate:
-# 				results2 = cur.execute('UPDATE users set user_login = 1 where email = %s' , [email])
-# 				mysql.connection.commit()
-# 				if results2 > 0:
-# 					session['logged_in'] = True
-# 					session['email'] = email
-# 					session['name'] = name
-# 					session['user_role'] = user_type
-# 					session['uid'] = uid
-# 					if user_type == "student":
-# 						return redirect(url_for('student_index'))
-# 					else:
-# 						return redirect(url_for('professor_index'))
-# 				else:
-# 					error = 'Error Occurred!'
-# 					return render_template('login.html', error=error)	
-# 			else:
-# 				error = 'Either Image not Verified or you have entered Invalid password or Already login'
-# 				return render_template('login.html', error=error)
-# 			cur.close()
-# 		else:
-# 			error = 'Already Login or Email was not found!'
-# 			return render_template('login.html', error=error)
-# 	return render_template('login.html')
 
 def generateOTP() : 
     digits = "0123456789"
@@ -202,9 +108,6 @@ def verifyEmail():
 		else:
 			return render_template('register.html',error="OTP is incorrect.")
 	return render_template('verifyEmail.html')
-
-
-
 
 @app.route("/professor_index")
 def professor_index():
@@ -269,13 +172,46 @@ def test_generate():
 		else:
 			return None
 
+@app.route('/viewquestions', methods=['GET'])
+# @user_role_professor
+def viewquestions():
+	cur = mysql.connection.cursor()
+	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s', (email,uid))
+	if results > 0:
+		cresults = cur.fetchall()
+		cur.close()
+		return render_template("viewquestions.html", cresults = cresults)
+	else:
+		return render_template("viewquestions.html", cresults = None)
+
+
+def examtypecheck(tidoption):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT test_type from teachers where test_id = %s and email = %s and uid = %s', (tidoption,session['email'],session['uid']))
+	callresults = cur.fetchone()
+	cur.close()
+	return callresults
+
+@app.route('/displayquestions',methods=['POST'])
+# @user_role_professor
+def displayquestions():
+	tid = request.form['choosetid']
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT * from questions WHERE test_id = %s', (tid,))
+	## additional comma to make it tuple for single value tid
+	results = cur.fetchall()
+	cur.close()
+	return render_template("displayquestions.html", callresults = results)
+
 @app.route('/deltidlist', methods=['GET'])
 # @user_role_professor
 def deltidlist():
 	cur = mysql.connection.cursor()
 	results = cur.execute('SELECT * from teachers where email = %s and uid = %s', (email,uid))
+	print(results)
 	if results > 0:
 		cresults = cur.fetchall()
+		print(cresults)
 		now = datetime.now()
 		now = now.strftime("%Y-%m-%d %H:%M:%S")
 		now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
@@ -289,105 +225,42 @@ def deltidlist():
 		return render_template("deltidlist.html", cresults = None)
 
 
-@app.route('/deldispques', methods=['GET','POST'])
-@user_role_professor
+@app.route('/deldispques', methods=['POST'])
+# @user_role_professor
 def deldispques():
 	if request.method == 'POST':
 		tidoption = request.form['choosetid']
-		et = examtypecheck(tidoption)
-		if et['test_type'] == "objective":
-			cur = mysql.connection.cursor()
-			cur.execute('SELECT * from questions where test_id = %s and uid = %s', (tidoption,session['uid']))
-			callresults = cur.fetchall()
-			cur.close()
-			return render_template("deldispques.html", callresults = callresults, tid = tidoption)
-		elif et['test_type'] == "subjective":
-			cur = mysql.connection.cursor()
-			cur.execute('SELECT * from longqa where test_id = %s and uid = %s', (tidoption,session['uid']))
-			callresults = cur.fetchall()
-			cur.close()
-			return render_template("deldispquesLQA.html", callresults = callresults, tid = tidoption)
-		elif et['test_type'] == "practical":
-			cur = mysql.connection.cursor()
-			cur.execute('SELECT * from practicalqa where test_id = %s and uid = %s', (tidoption,session['uid']))
-			callresults = cur.fetchall()
-			cur.close()
-			return render_template("deldispquesPQA.html", callresults = callresults, tid = tidoption)
-		else:
-			flash("Some Error Occured!")
-			return redirect(url_for('/deltidlist'))
+		cur = mysql.connection.cursor()
+		cur.execute('SELECT * from questions where test_id = %s and uid = %s', (tidoption,uid))
+		callresults = cur.fetchall()
+		cur.close()
+		return render_template("deldispques.html", callresults = callresults, tid = tidoption)
 
-@app.route('/delete_questions/<testid>', methods=['GET', 'POST'])
-@user_role_professor
+@app.route('/delete_questions/<testid>', methods=['POST'])
+# @user_role_professor
 def delete_questions(testid):
-	et = examtypecheck(testid)
-	if et['test_type'] == "objective":
-		cur = mysql.connection.cursor()
-		msg = '' 
-		if request.method == 'POST':
-			testqdel = request.json['qids']
-			if testqdel:
-				if ',' in testqdel:
-					testqdel = testqdel.split(',')
-					for getid in testqdel:
-						cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,getid,session['uid']))
-						mysql.connection.commit()
-					resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
-					resp.status_code = 200
-					return resp
-				else:
-					cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,testqdel,session['uid']))
+	cur = mysql.connection.cursor()
+	msg = '' 
+	if request.method == 'POST':
+		testqdel = request.json['qids']
+		if testqdel:
+			if ',' in testqdel:
+				testqdel = testqdel.split(',')
+				for getid in testqdel:
+					cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,getid,uid))
 					mysql.connection.commit()
-					resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
-					resp.status_code = 200
-					return resp
-	elif et['test_type'] == "subjective":
-		cur = mysql.connection.cursor()
-		msg = '' 
-		if request.method == 'POST':
-			testqdel = request.json['qids']
-			if testqdel:
-				if ',' in testqdel:
-					testqdel = testqdel.split(',')
-					for getid in testqdel:
-						cur.execute('DELETE FROM longqa WHERE test_id = %s and qid =%s and uid = %s', (testid,getid,session['uid']))
-						mysql.connection.commit()
-					resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
-					resp.status_code = 200
-					return resp
-				else:
-					cur.execute('DELETE FROM longqa WHERE test_id = %s and qid =%s and uid = %s', (testid,testqdel,session['uid']))
-					mysql.connection.commit()
-					resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
-					resp.status_code = 200
-					return resp
-	elif et['test_type'] == "practical":
-		cur = mysql.connection.cursor()
-		msg = '' 
-		if request.method == 'POST':
-			testqdel = request.json['qids']
-			if testqdel:
-				if ',' in testqdel:
-					testqdel = testqdel.split(',')
-					for getid in testqdel:
-						cur.execute('DELETE FROM practicalqa WHERE test_id = %s and qid =%s and uid = %s', (testid,getid,session['uid']))
-						mysql.connection.commit()
-					resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
-					resp.status_code = 200
-					return resp
+				resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
+				resp.status_code = 200
+				return resp
 			else:
-				cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,testqdel,session['uid']))
+				cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,testqdel,uid))
 				mysql.connection.commit()
 				resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
 				resp.status_code = 200
 				return resp
-	else:
-		flash("Some Error Occured!")
-		return redirect(url_for('/deltidlist'))
-
 
 @app.route('/<testid>/<qid>')
-@user_role_professor
+# @user_role_professor
 def del_qid(testid, qid):
 	cur = mysql.connection.cursor()
 	results = cur.execute('DELETE FROM questions where test_id = %s and qid = %s and uid = %s', (testid,qid,session['uid']))

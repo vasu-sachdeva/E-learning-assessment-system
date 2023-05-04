@@ -47,7 +47,7 @@ CREATE TABLE `proctoring_log` (
 --
 -- Table structure for table `questions`
 --
-
+-- questions_uid is set as auto_increament in seperate code below afterwards 
 CREATE TABLE `questions` (
   `questions_uid` bigint NOT NULL,
   `test_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -176,7 +176,7 @@ CREATE TABLE `window_estimation_log` (
   `uid` bigint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-select * from teachers;
+select * from questions where test_id = 'daffodil-gaur';
 
 --
 -- Indexes for dumped tables
