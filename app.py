@@ -115,6 +115,10 @@ def verifyEmail():
 def professor_index():
 	return render_template('professor_index.html')
 
+@app.route("/student_index")
+def student_index():
+	return render_template('student_index.html')
+
 @app.route("/create-test", methods = ['GET', 'POST'])
 def create_test():
 	form = UploadForm()
@@ -186,14 +190,6 @@ def viewquestions():
 	else:
 		return render_template("viewquestions.html", cresults = None)
 
-
-def examtypecheck(tidoption):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT test_type from teachers where test_id = %s and email = %s and uid = %s', (tidoption,session['email'],session['uid']))
-	callresults = cur.fetchone()
-	cur.close()
-	return callresults
-
 @app.route('/displayquestions',methods=['POST'])
 # @user_role_professor
 def displayquestions():
@@ -204,6 +200,17 @@ def displayquestions():
 	results = cur.fetchall()
 	cur.close()
 	return render_template("displayquestions.html", callresults = results)
+
+@app.route(f'/{{email}}/disptests', methods=['GET'])
+def disptests():
+	cur = mysql.connection.cursor()
+	res = cur.execute('SELECT test_id,password,subject,topic FROM teachers WHERE uid = %s and email = %s',(uid,email))
+	if res>0:
+		tests = cur.fetchall()
+		cur.close()
+		return render_template('disptests.html',tests = tests)
+	return render_template('disptests.html',tests = None)
+
 
 @app.route('/deltidlist', methods=['GET'])
 # @user_role_professor
@@ -265,7 +272,7 @@ def delete_questions(testid):
 # @user_role_professor
 def del_qid(testid, qid):
 	cur = mysql.connection.cursor()
-	results = cur.execute('DELETE FROM questions where test_id = %s and qid = %s and uid = %s', (testid,qid,session['uid']))
+	results = cur.execute('DELETE FROM questions where test_id = %s and qid = %s and uid = %s', (testid,qid,uid))
 	mysql.connection.commit()
 	if results>0:
 		msg="Deleted successfully"
