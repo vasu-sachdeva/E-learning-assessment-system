@@ -1,7 +1,7 @@
 ## Edited By Durvesh
 
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash,session, redirect
-from flask_session import Session
+# from flask_session import Session
 from flask_mysqldb import MySQL
 from flask_mail import Mail, Message
 import math, random 
@@ -22,7 +22,7 @@ app = Flask(__name__)
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PORT'] = 3306
-app.config['MYSQL_PASSWORD'] = 'password'
+app.config['MYSQL_PASSWORD'] = '00000'
 app.config['MYSQL_DB'] = 'quizapp'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
@@ -274,6 +274,69 @@ def del_qid(testid, qid):
 		return render_template("deldispques.html", success=msg)
 	else:
 		return redirect(url_for('/deldispques'))
+
+################### UPDATE QUESTIONS ######################
+
+@app.route('/updatetidlist', methods=['GET'])
+# @user_role_professor
+def updatetidlist():
+	cur = mysql.connection.cursor()
+	results = cur.execute('SELECT * from teachers where email = %s and uid = %s', (email,uid))
+	if results > 0:
+		cresults = cur.fetchall()
+		now = datetime.now()
+		now = now.strftime("%Y-%m-%d %H:%M:%S")
+		now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
+		testids = []
+		for a in cresults:
+			if datetime.strptime(str(a['start']),"%Y-%m-%d %H:%M:%S") > now:
+				testids.append(a['test_id'])
+		cur.close()
+		return render_template("updatetidlist.html", cresults = testids)
+	else:
+		return render_template("updatetidlist.html", cresults = None)
+
+@app.route('/updatedispques', methods=['GET','POST'])
+# @user_role_professor
+def updatedispques():
+	if request.method == 'POST':
+		tidoption = request.form['choosetid']
+		# et = examtypecheck(tidoption)
+		cur = mysql.connection.cursor()
+		cur.execute('SELECT * from questions where test_id = %s and uid = %s', (tidoption,uid))
+		callresults = cur.fetchall()
+		cur.close()
+		return render_template("updatedispques.html", callresults = callresults)
+
+@app.route('/update/<testid>/<qid>', methods=['GET','POST'])
+# @user_role_professor
+def update_quiz(testid, qid):
+	if request.method == 'GET':
+		cur = mysql.connection.cursor()
+		cur.execute('SELECT * FROM questions where test_id = %s and qid =%s and uid = %s', (testid,qid,uid))
+		uresults = cur.fetchall()
+		mysql.connection.commit()
+		return render_template("updateQuestions.html", uresults=uresults)
+	if request.method == 'POST':
+		ques = request.form['ques']
+		ao = request.form['ao']
+		bo = request.form['bo']
+		co = request.form['co']
+		do = request.form['do']
+		anso = request.form['anso']
+		markso = request.form['mko']
+		cur = mysql.connection.cursor()
+		cur.execute('UPDATE questions SET q = %s, a = %s, b = %s, c = %s, d = %s, ans = %s, marks = %s where test_id = %s and qid = %s and uid = %s', (ques,ao,bo,co,do,anso,markso,testid,qid,uid))
+		cur.connection.commit()
+		flash('Updated successfully.', 'success')
+		cur.close()
+		return redirect(url_for('updatetidlist'))
+	else:
+		flash('ERROR  OCCURED.', 'error')
+		return redirect(url_for('updatetidlist'))
+
+
+
 
 
 if __name__ == "__main__":
