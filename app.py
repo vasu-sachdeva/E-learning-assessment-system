@@ -22,7 +22,7 @@ app = Flask(__name__)
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PORT'] = 3306
-app.config['MYSQL_PASSWORD'] = '00000'
+app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = 'quizapp'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
@@ -201,7 +201,7 @@ def displayquestions():
 	cur.close()
 	return render_template("displayquestions.html", callresults = results)
 
-@app.route(f'/{{email}}/disptests', methods=['GET'])
+@app.route(f'/disptests', methods=['GET'])
 def disptests():
 	cur = mysql.connection.cursor()
 	res = cur.execute('SELECT test_id,password,subject,topic FROM teachers WHERE uid = %s and email = %s',(uid,email))
@@ -280,7 +280,7 @@ def del_qid(testid, qid):
 		cur.close()
 		return render_template("deldispques.html", success=msg)
 	else:
-		return redirect(url_for('/deldispques'))
+		return render_template('deldispques.html')
 
 ################### UPDATE QUESTIONS ######################
 
