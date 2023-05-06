@@ -176,7 +176,7 @@ CREATE TABLE `window_estimation_log` (
   `uid` bigint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-select * from questions where test_id = 'daffodil-gaur';
+select * from questions;
 
 --
 -- Indexes for dumped tables
@@ -316,7 +316,7 @@ ALTER TABLE `teachers`
 ALTER TABLE `window_estimation_log`
   ADD CONSTRAINT `window_estimation_log_ibfk_1` FOREIGN KEY (`uid`) REFERENCES `users` (`uid`);
 COMMIT;
-
+select * from questions;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
