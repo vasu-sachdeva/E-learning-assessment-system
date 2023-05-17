@@ -22,7 +22,7 @@ app = Flask(__name__)
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PORT'] = 3306
-app.config['MYSQL_PASSWORD'] = '00000'
+app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = 'quizapp'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
@@ -31,6 +31,7 @@ mysql = MySQL(app)
 
 uid = 123456
 email = "abc@abc.com"
+email_std = "a@a.com"
 sender = 'youremail@abc.com'
 
 def user_role_professor(f):
@@ -342,7 +343,20 @@ def update_quiz(testid, qid):
 		flash('ERROR  OCCURED.', 'error')
 		return redirect(url_for('updatetidlist'))
 
-
+@app.route('/<email_id>/student_test_history')
+def student_test_history(email_id):
+	print(email_id)
+	print(email)
+	if email_id == email_std:
+		cur = mysql.connection.cursor()
+		results = cur.execute('SELECT a.test_id, b.subject, b.topic \
+			from studenttestinfo a, teachers b where a.test_id = b.test_id and a.email=%s  \
+			and a.completed=1', [email_id])
+		results = cur.fetchall()
+		return render_template('student_test_history.html', tests=results)
+	else:
+		print('You are not authorized', 'danger')
+		return redirect(url_for('student_index'))
 
 
 
