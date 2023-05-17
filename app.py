@@ -34,18 +34,18 @@ email = "abc@abc.com"
 sender = 'youremail@abc.com'
 
 def user_role_professor(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'logged_in' in session:
-            if session['user_role'] == "teacher":
-                return f(*args, **kwargs)
-            else:
-                flash('You dont have privilege to access this page!','danger')
-                return render_template("404.html")
-        else:
-            flash('Unauthorized, Please login!','danger')
-            return redirect(url_for('login'))
-    return wrap
+	@wraps(f)
+	def wrap(*args, **kwargs):
+		if 'logged_in' in session:
+			if session['user_role'] == "teacher":
+				return f(*args, **kwargs)
+			else:
+				flash('You dont have privilege to access this page!','danger')
+				return render_template("404.html")
+		else:
+			flash('Unauthorized, Please login!','danger')
+			return redirect(url_for('login'))
+	return wrap
 
 class UploadForm(FlaskForm):
 	subject = StringField('Subject',validators=[InputRequired(message="required")])
@@ -79,11 +79,11 @@ def index():
 	return render_template('index.html', messages = 'My name is proctor')
 
 def generateOTP() : 
-    digits = "0123456789"
-    OTP = "" 
-    for i in range(5) : 
-        OTP += digits[math.floor(random.random() * 10)] 
-    return OTP 
+	digits = "0123456789"
+	OTP = "" 
+	for i in range(5) : 
+		OTP += digits[math.floor(random.random() * 10)] 
+	return OTP 
 
 @app.route('/verifyEmail', methods=['GET','POST'])
 def verifyEmail():
@@ -268,6 +268,20 @@ def delete_questions(testid):
 				resp.status_code = 200
 				return resp
 
+
+@app.route('/viewstudentslogs', methods=['GET'])
+# @user_role_professor
+def viewstudentslogs():
+	cur = mysql.connection.cursor()
+	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s and proctoring_type = 0', (email,uid))
+	if results > 0:
+		cresults = cur.fetchall()
+		cur.close()
+		return render_template("viewstudentslogs.html", cresults = cresults)
+	else:
+		return render_template("viewstudentslogs.html", cresults = None)
+
+
 @app.route('/<testid>/<qid>')
 # @user_role_professor
 def del_qid(testid, qid):
@@ -342,8 +356,44 @@ def update_quiz(testid, qid):
 		flash('ERROR  OCCURED.', 'error')
 		return redirect(url_for('updatetidlist'))
 
+@app.route('/<email>/tests-given', methods = ['POST','GET'])
+#@user_role_student
+def tests_given(email):
+	if request.method == "GET":
+		# if email == session['email']:
+		cur = mysql.connection.cursor()
+		resultsTestids = cur.execute('select studenttestinfo.test_id as test_id from studenttestinfo,teachers where studenttestinfo.email = %s and studenttestinfo.uid = %s and studenttestinfo.completed=1 and teachers.test_id = studenttestinfo.test_id and teachers.show_ans = 1 ', (email, uid))
+		resultsTestids = cur.fetchall()
+		cur.close()
+		return render_template('tests_given.html', cresults = resultsTestids)
+		# else:
+		# 		flash('You are not authorized', 'danger')
+		# 	return redirect(url_for('student_index'))
+	elif request.method == "POST":
+		tidoption = request.form['choosetid']
+		cur = mysql.connection.cursor()
+		cur.execute('SELECT test_type from teachers where test_id = %s',[tidoption])
+		callresults = cur.fetchone()
+		cur.close()
+		# if callresults['test_type'] == "objective":
+		cur = mysql.connection.cursor()
+		results = cur.execute('select distinct(students.test_id) as test_id, students.email as email, subject,topic,neg_marks from students,studenttestinfo,teachers where students.email = %s and teachers.test_type = %s and students.test_id = %s and students.test_id=teachers.test_id and students.test_id=studenttestinfo.test_id and studenttestinfo.completed=1', (email, "objective", tidoption))
+		results = cur.fetchall()
+		cur.close()
+		results1 = []
+		studentResults = None
+		for a in results:
+			results1.append(neg_marks(a['email'],a['test_id'],a['neg_marks']))
+			studentResults = zip(results,results1)
+		return render_template('obj_result_student.html', tests=studentResults)
+	else:
+		flash('You are not authorized', 'danger')
+		return redirect(url_for('student_index'))
 
-
+def neg_marks(email,testid,negm):
+	cur=mysql.connection.cursor()
+	results = cur.execute("SELECT q.marks, q.qid AS qid, q.ans AS correct, IFNULL(s.ans, 0) AS marked FROM questions q INNER JOIN students s ON s.test_id = q.test_id AND s.test_id = %s AND s.email = %s AND s.qid = q.qid GROUP BY q.marks, q.qid, q.ans, s.ans ORDER BY q.qid ASC", (testid, email))
+	data=cur.fetchall()
 
 
 if __name__ == "__main__":
