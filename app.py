@@ -345,8 +345,6 @@ def update_quiz(testid, qid):
 
 @app.route('/<email_id>/student_test_history')
 def student_test_history(email_id):
-	print(email_id)
-	print(email)
 	if email_id == email_std:
 		cur = mysql.connection.cursor()
 		results = cur.execute('SELECT a.test_id, b.subject, b.topic \
@@ -355,7 +353,7 @@ def student_test_history(email_id):
 		results = cur.fetchall()
 		return render_template('student_test_history.html', tests=results)
 	else:
-		print('You are not authorized', 'danger')
+		flash('You are not authorized', 'danger')
 		return redirect(url_for('student_index'))
 
 
@@ -363,4 +361,4 @@ def student_test_history(email_id):
 if __name__ == "__main__":
 	app.run()
 
-# updated by manav on 13:50 
+# updated by vasu on 17/5 9:55am
