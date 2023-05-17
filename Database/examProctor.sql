@@ -150,7 +150,7 @@ INSERT INTO `quizapp`.`users`
 `user_image`,
 `user_login`)
 VALUES
-(123456,'Manav','abc@abc.com','lnm','professor','adasdkjdhadkhksdhkjadhkjadhk',2);
+(0123,'Vasu','a@a.com','pass','student','adasdkjdhadkhksdhkjadhkjadhk',2);
 
 SELECT `questions`.`questions_uid`,
     `questions`.`test_id`,
@@ -165,8 +165,16 @@ SELECT `questions`.`questions_uid`,
     `questions`.`uid`
 FROM `quizapp`.`questions`;
 
+SELECT * FROM studenttestinfo;
 
+INSERT INTO studenttestinfo (stiid, email, test_id, time_left, completed, uid) VALUES
+(1, 'a@a.com', 'quixotic-kingfisher', '00:30:00', 1, 0123);
 
+select* from studenttestinfo;
+
+DELETE FROM `quizapp`.`studenttestinfo` where stiid = 1;
+
+SELECT a.test_id, b.subject, b.topic from studenttestinfo a, teachers b where a.test_id = b.test_id and a.email='a@a.com' and a.completed=1;
 -- --------------------------------------------------------
 
 --
@@ -323,7 +331,7 @@ ALTER TABLE `teachers`
 ALTER TABLE `window_estimation_log`
   ADD CONSTRAINT `window_estimation_log_ibfk_1` FOREIGN KEY (`uid`) REFERENCES `users` (`uid`);
 COMMIT;
-select * from questions;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

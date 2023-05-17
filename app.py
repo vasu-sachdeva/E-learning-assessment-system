@@ -31,6 +31,7 @@ mysql = MySQL(app)
 
 uid = 123456
 email = "abc@abc.com"
+email_std = "a@a.com"
 sender = 'youremail@abc.com'
 
 def user_role_professor(f):
@@ -386,6 +387,16 @@ def tests_given(email):
 			results1.append(neg_marks(a['email'],a['test_id'],a['neg_marks']))
 			studentResults = zip(results,results1)
 		return render_template('obj_result_student.html', tests=studentResults)
+
+@app.route('/<email_id>/student_test_history')
+def student_test_history(email_id):
+	if email_id == email_std:
+		cur = mysql.connection.cursor()
+		results = cur.execute('SELECT a.test_id, b.subject, b.topic \
+			from studenttestinfo a, teachers b where a.test_id = b.test_id and a.email=%s  \
+			and a.completed=1', [email_id])
+		results = cur.fetchall()
+		return render_template('student_test_history.html', tests=results)
 	else:
 		flash('You are not authorized', 'danger')
 		return redirect(url_for('student_index'))
@@ -399,4 +410,4 @@ def neg_marks(email,testid,negm):
 if __name__ == "__main__":
 	app.run()
 
-# updated by manav on 13:50 
+# updated by vasu on 17/5 9:55am
