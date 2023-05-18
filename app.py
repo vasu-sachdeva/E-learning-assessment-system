@@ -270,17 +270,17 @@ def delete_questions(testid):
 				return resp
 
 
-@app.route('/viewstudentslogs', methods=['GET'])
-# @user_role_professor
-def viewstudentslogs():
-	cur = mysql.connection.cursor()
-	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s and proctoring_type = 0', (email,uid))
-	if results > 0:
-		cresults = cur.fetchall()
-		cur.close()
-		return render_template("viewstudentslogs.html", cresults = cresults)
-	else:
-		return render_template("viewstudentslogs.html", cresults = None)
+# @app.route('/viewstudentslogs', methods=['GET'])
+# # @user_role_professor
+# def viewstudentslogs():
+# 	cur = mysql.connection.cursor()
+# 	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s and proctoring_type = 0', (email,uid))
+# 	if results > 0:
+# 		cresults = cur.fetchall()
+# 		cur.close()
+# 		return render_template("viewstudentslogs.html", cresults = cresults)
+# 	else:
+# 		return render_template("viewstudentslogs.html", cresults = None)
 
 
 @app.route('/<testid>/<qid>')
@@ -406,6 +406,32 @@ def neg_marks(email,testid,negm):
 	results = cur.execute("SELECT q.marks, q.qid AS qid, q.ans AS correct, IFNULL(s.ans, 0) AS marked FROM questions q INNER JOIN students s ON s.test_id = q.test_id AND s.test_id = %s AND s.email = %s AND s.qid = q.qid GROUP BY q.marks, q.qid, q.ans, s.ans ORDER BY q.qid ASC", (testid, email))
 	data=cur.fetchall()
 
+
+
+# PROCTORING
+
+@app.route('/viewstudentslogs', methods=['GET'])
+# @user_role_professor
+def viewstudentslogs():
+	cur = mysql.connection.cursor()
+	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s and proctoring_type = 0', (email, uid))
+	if results > 0:
+		cresults = cur.fetchall()
+		cur.close()
+		return render_template("viewstudentslogs.html", cresults = cresults)
+	else:
+		return render_template("viewstudentslogs.html", cresults = None)
+
+@app.route('/displaystudentsdetails', methods=['GET','POST'])
+@user_role_professor
+def displaystudentsdetails():
+	if request.method == 'POST':
+		tidoption = request.form['choosetid']
+		cur = mysql.connection.cursor()
+		cur.execute('SELECT DISTINCT email,test_id from proctoring_log where test_id = %s', [tidoption])
+		callresults = cur.fetchall()
+		cur.close()
+		return render_template("displaystudentsdetails.html", callresults = callresults)
 
 if __name__ == "__main__":
 	app.run()
