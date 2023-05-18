@@ -42,6 +42,7 @@ CREATE TABLE `proctoring_log` (
 
 
 
+
 -- --------------------------------------------------------
 
 --
@@ -153,17 +154,6 @@ INSERT INTO `quizapp`.`users`
 VALUES
 (0123,'Vasu','a@a.com','pass','student','adasdkjdhadkhksdhkjadhkjadhk',2);
 
-INSERT INTO `quizapp`.`users`
-(`uid`,
-`name`,
-`email`,
-`password`,
-`user_type`,
-`user_image`,
-`user_login`)
-VALUES
-(234567,'Vasu','cde@cde.com','lnmhacks','student','adasdkjdhadksadadasfasdasdjadhk',0);
-
 SELECT `questions`.`questions_uid`,
     `questions`.`test_id`,
     `questions`.`qid`,
@@ -177,16 +167,14 @@ SELECT `questions`.`questions_uid`,
     `questions`.`uid`
 FROM `quizapp`.`questions`;
 
-<<<<<<< HEAD
-select * from teachers;
-=======
 SELECT * FROM studenttestinfo;
 
 INSERT INTO studenttestinfo (stiid, email, test_id, time_left, completed, uid) VALUES
 (1, 'a@a.com', 'quixotic-kingfisher', '00:30:00', 1, 0123);
->>>>>>> da8f90256fa10767ac78c63dd5e96721cbc7eeda
 
-select* from studenttestinfo;
+select* from teachers;
+SELECT test_id from teachers where email = 'abc@abc.com' and uid = 123456 and proctoring_type = 0;
+SELECT DISTINCT email,test_id from proctoring_log where test_id = 'quixotic-kingfisher';
 
 DELETE FROM `quizapp`.`studenttestinfo` where stiid = 1;
 

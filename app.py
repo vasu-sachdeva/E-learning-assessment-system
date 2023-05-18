@@ -18,6 +18,7 @@ import numpy as np
 import cv2
 import json
 import base64
+import camera
 from deepface import DeepFace
 
 app = Flask(__name__)
@@ -34,14 +35,12 @@ mysql = MySQL(app)
 
 uid = 123456
 email = "abc@abc.com"
-<<<<<<< HEAD
 
 suid = 234567
 semail = 'cde@cde.com'
 
-=======
+name = "Vasu"
 email_std = "a@a.com"
->>>>>>> da8f90256fa10767ac78c63dd5e96721cbc7eeda
 sender = 'youremail@abc.com'
 
 def user_role_professor(f):
@@ -367,7 +366,6 @@ def update_quiz(testid, qid):
 		flash('ERROR  OCCURED.', 'error')
 		return redirect(url_for('updatetidlist'))
 
-<<<<<<< HEAD
 ###################################### Student DashBoard ##########################################
 
 class TestForm(Form):
@@ -376,7 +374,6 @@ class TestForm(Form):
 	img_hidden_form = HiddenField(label=(''))
 
 ############ take/give Exam #################
-=======
 @app.route('/<email>/tests-given', methods = ['POST','GET'])
 #@user_role_student
 def tests_given(email):
@@ -425,7 +422,6 @@ def neg_marks(email,testid,negm):
 	cur=mysql.connection.cursor()
 	results = cur.execute("SELECT q.marks, q.qid AS qid, q.ans AS correct, IFNULL(s.ans, 0) AS marked FROM questions q INNER JOIN students s ON s.test_id = q.test_id AND s.test_id = %s AND s.email = %s AND s.qid = q.qid GROUP BY q.marks, q.qid, q.ans, s.ans ORDER BY q.qid ASC", (testid, email))
 	data=cur.fetchall()
->>>>>>> da8f90256fa10767ac78c63dd5e96721cbc7eeda
 
 @app.route("/give-test", methods = ['GET', 'POST'])
 # @user_role_student
@@ -624,6 +620,44 @@ def displaystudentsdetails():
 		callresults = cur.fetchall()
 		cur.close()
 		return render_template("displaystudentsdetails.html", callresults = callresults)
+
+@app.route('/video_feed', methods=['GET','POST'])
+# @user_role_student
+def video_feed():
+	if request.method == "POST":
+		imgData = request.form['data[imgData]']
+		testid = request.form['data[testid]']
+		voice_db = request.form['data[voice_db]']
+		proctorData = camera.get_frame(imgData)
+		jpg_as_text = proctorData['jpg_as_text']
+		mob_status =proctorData['mob_status']
+		person_status = proctorData['person_status']
+		user_move1 = proctorData['user_move1']
+		user_move2 = proctorData['user_move2']
+		eye_movements = proctorData['eye_movements']
+		cur = mysql.connection.cursor()
+		results = cur.execute('INSERT INTO proctoring_log (email, name, test_id, voice_db, img_log, user_movements_updown, user_movements_lr, user_movements_eyes, phone_detection, person_status, uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+			(email, name, testid, voice_db, jpg_as_text, user_move1, user_move2, eye_movements, mob_status, person_status,uid))
+		mysql.connection.commit()
+		cur.close()
+		if(results > 0):
+			return "recorded image of video"
+		else:
+			return "error in video"
+
+@app.route('/window_event', methods=['GET','POST'])
+# @user_role_student
+def window_event():
+	if request.method == "POST":
+		testid = request.form['testid']
+		cur = mysql.connection.cursor()
+		results = cur.execute('INSERT INTO window_estimation_log (email, test_id, name, window_event, uid) values(%s,%s,%s,%s,%s)', (email, testid, name, 1, uid))
+		mysql.connection.commit()
+		cur.close()
+		if(results > 0):
+			return "recorded window"
+		else:
+			return "error in window"
 
 if __name__ == "__main__":
 	app.run()
