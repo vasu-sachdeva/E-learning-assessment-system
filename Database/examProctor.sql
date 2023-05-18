@@ -78,6 +78,8 @@ CREATE TABLE `students` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+INSERT INTO `students` (`sid`, `email`, `test_id`, `qid`, `ans`, `uid`)
+VALUES (2, 'abc@abc.com', 'test123', 'question123', 'Answer to the question', 123456);
 
 --
 -- Table structure for table `studenttestinfo`
@@ -93,7 +95,11 @@ CREATE TABLE `studenttestinfo` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
-
+INSERT INTO `studenttestinfo` (`stiid`, `email`, `test_id`, `time_left`, `completed`, `uid`)
+VALUES (3, 'abc@abc.com', 'test123', '00:30:00', 1, 123456);
+INSERT INTO `studenttestinfo` (`stiid`, `email`, `test_id`, `time_left`, `completed`, `uid`)
+VALUES (2, 'example1@example.com', 'test1234', '00:31:00', 1, 123456);
+select * from studenttestinfo;
 --
 -- Table structure for table `teachers`
 --
@@ -115,6 +121,8 @@ CREATE TABLE `teachers` (
   `proctoring_type` tinyint NOT NULL DEFAULT '0',
   `uid` bigint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `teachers` (`tid`, `email`, `test_id`, `test_type`, `start`, `end`, `duration`, `show_ans`, `password`, `subject`, `topic`, `neg_marks`, `calc`, `proctoring_type`, `uid`)
+VALUES (4, 'abc@abc.com', 'test123', 'objective', '2023-05-16 09:00:00', '2023-05-16 10:30:00', 90, 1, 'password123', 'Mathematics', 'Algebra', 1, 1, 0, 123456);
 
 -- --------------------------------------------------------
 
@@ -328,5 +336,6 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
+select distinct(students.test_id) as test_id, students.email as email, subject,topic,neg_marks from students,studenttestinfo,teachers where students.email = "abc@abc.com" and teachers.test_type = "objective" and students.test_id = "test123" and students.test_id=teachers.test_id and students.test_id=studenttestinfo.test_id and studenttestinfo.completed=1;
+select studenttestinfo.test_id as test_id from studenttestinfo,teachers where studenttestinfo.email = "abc@abc.com" and studenttestinfo.uid = "123456" and studenttestinfo.completed=1 and teachers.test_id = studenttestinfo.test_id and teachers.show_ans = 1 ;
 select @@password_history
