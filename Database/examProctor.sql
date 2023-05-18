@@ -144,6 +144,17 @@ INSERT INTO `quizapp`.`users`
 VALUES
 (123456,'Manav','abc@abc.com','lnm','professor','adasdkjdhadkhksdhkjadhkjadhk',2);
 
+INSERT INTO `quizapp`.`users`
+(`uid`,
+`name`,
+`email`,
+`password`,
+`user_type`,
+`user_image`,
+`user_login`)
+VALUES
+(234567,'Vasu','cde@cde.com','lnmhacks','student','adasdkjdhadksadadasfasdasdjadhk',0);
+
 SELECT `questions`.`questions_uid`,
     `questions`.`test_id`,
     `questions`.`qid`,
@@ -157,7 +168,7 @@ SELECT `questions`.`questions_uid`,
     `questions`.`uid`
 FROM `quizapp`.`questions`;
 
-
+select * from teachers;
 
 -- --------------------------------------------------------
 
