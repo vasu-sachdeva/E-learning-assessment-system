@@ -138,12 +138,12 @@ else
 {
   document.getElementById('calccheck').style.display = "none"
 }
-var vid = "{{proctortype}}";
-console.log(vid)
+var vid = "0";
 if(vid == "0")
 {
   document.getElementById('videocheck').style.display = "block"
   startStreaming();
+  alert("Snapshot function calling");
   captureSnapshot();
 }
 else

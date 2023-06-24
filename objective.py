@@ -96,7 +96,10 @@ class ObjectiveTest:
         else:
             synset = synsets[0]
         
-        hypernym = synset.hypernyms()[0]
+        hypernym = synset.hypernyms()
+        if not hypernym:
+            return []
+        hypernym = hypernym[0]
         hyponyms = hypernym.hyponyms()
         similar_words = []
         for hyponym in hyponyms:
@@ -110,7 +113,9 @@ class ObjectiveTest:
     def generate_test(self):
         trivial_pair = self.get_trivial_sentences()
         question_answer = list()
+        print("-*******-")
         print(trivial_pair)
+        print("-*******-")
         for que_ans_dict in trivial_pair:
             if que_ans_dict["Key"] > int(self.noOfQues):
                 question_answer.append(que_ans_dict)

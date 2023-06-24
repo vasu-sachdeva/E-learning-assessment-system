@@ -18,7 +18,7 @@ import numpy as np
 import cv2
 import json
 import base64
-import camera
+# import camera
 from deepface import DeepFace
 
 app = Flask(__name__)
@@ -29,6 +29,15 @@ app.config['MYSQL_PORT'] = 3306
 app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = 'quizapp'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+
+app.config['MAIL_SERVER']='smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'examproject2024@gmail.com'
+app.config['MAIL_PASSWORD'] = 'hhcgxhwwmhthepal'
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+
+mail = Mail(app)
 
 app.secret_key = 'cvproject'
 mysql = MySQL(app)
@@ -95,17 +104,37 @@ def generateOTP() :
 		OTP += digits[math.floor(random.random() * 10)] 
 	return OTP 
 
+@app.route('/register', methods=['GET','POST'])
+def register():
+	if request.method == 'POST':
+		name = request.form['name']
+		email = request.form['email']
+		password = request.form['password']
+		user_type = request.form['user_type']
+		# session['tempName'] = name
+		# session['tempEmail'] = email
+		# session['tempPassword'] = password
+		# session['tempUT'] = user_type
+		# sesOTP = generateOTP()
+		# session['tempOTP'] = sesOTP
+		msg1 = Message('MyProctor.ai - OTP Verification', sender = sender, recipients = [email])
+		msg1.body = "New Account opening - Your OTP Verfication code is "+sesOTP+"."
+		mail.send(msg1)
+		return redirect(url_for('verifyEmail')) 
+	return render_template('register.html')
+
+
 @app.route('/verifyEmail', methods=['GET','POST'])
 def verifyEmail():
 	if request.method == 'POST':
 		theOTP = request.form['eotp']
-		mOTP = session['tempOTP']
-		dbName = session['tempName']
-		dbEmail = session['tempEmail']
-		dbPassword = session['tempPassword']
-		dbUser_type = session['tempUT']
-		dbImgdata = session['tempImage']
-		if(theOTP == mOTP):
+		# mOTP = session['tempOTP']
+		# dbName = session['tempName']
+		# dbEmail = session['tempEmail']
+		# dbPassword = session['tempPassword']
+		# dbUser_type = session['tempUT']
+		# dbImgdata = session['tempImage']
+		if(theOTP == OTP):
 			cur = mysql.connection.cursor()
 			ar = cur.execute('INSERT INTO users(name, email, password, user_type, user_image, user_login) values(%s,%s,%s,%s,%s,%s)', (dbName, dbEmail, dbPassword, dbUser_type, dbImgdata,0))
 			mysql.connection.commit()
@@ -120,6 +149,24 @@ def verifyEmail():
 		else:
 			return render_template('register.html',error="OTP is incorrect.")
 	return render_template('verifyEmail.html')
+
+@app.route('/login', methods=['GET','POST'])
+def login():
+	if request.method == 'POST':
+		email = request.form['email']
+		password_candidate = request.form['password']
+		user_type = request.form['user_type']
+		cur = mysql.connection.cursor()
+		results1 = cur.execute('SELECT uid, name, email, password, user_type, user_image from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
+		if results1 > 0:
+			cresults = cur.fetchone()
+			password = cresults['password']
+			name = cresults['name']
+			uid = cresults['uid']
+		else:
+			error = 'Already Login or Email was not found!'
+			return render_template('login.html', error=error)
+	return render_template('login.html')
 
 @app.route("/professor_index")
 def professor_index():
@@ -162,8 +209,6 @@ def create_test():
 		print(start_date, end_date, start_time, end_time, start_date_time, end_date_time, neg_mark, calc, duration, password, subject, topic)
 		cur.execute('INSERT INTO teachers (email, test_id, test_type, start, end, duration, show_ans, password, subject, topic, neg_marks, calc, uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
 			(email, test_id, "objective", start_date_time, end_date_time, duration, 1, password, subject, topic, neg_mark, calc, uid))
-		mysql.connection.commit()
-		cur.execute('UPDATE users SET examcredits = examcredits-1 where email = %s and uid = %s', (email,uid))
 		mysql.connection.commit()
 		cur.close()
 		flash(f'Exam ID: {test_id}', 'success')
@@ -531,11 +576,11 @@ def test(testid):
 	global duration, marked_ans, calc, subject, topic, proctortype
 	if request.method == 'GET':
 		data = {'duration': duration, 'marks': '', 'q': '', 'a': '', 'b':'','c':'','d':'' }
-		print("hi")
-		return render_template('testquiz.html' ,**data, answers=marked_ans, calc=calc, subject=subject, topic=topic, tid=testid, proctortype=proctortype)
+		# print("hi")
+		# return render_template('testquiz.html' ,**data, answers=marked_ans, calc=calc, subject=subject, topic=topic, tid=testid, proctortype=proctortype)
 		try:
 			data = {'duration': duration, 'marks': '', 'q': '', 'a': '', 'b':'','c':'','d':'' }
-			print("hi")
+			# print("hi")
 			return render_template('testquiz.html' ,**data, answers=marked_ans, calc=calc, subject=subject, topic=topic, tid=testid, proctortype=proctortype)
 		except:
 			return redirect(url_for('give_test'))
@@ -611,7 +656,7 @@ def viewstudentslogs():
 		return render_template("viewstudentslogs.html", cresults = None)
 
 @app.route('/displaystudentsdetails', methods=['GET','POST'])
-@user_role_professor
+# @user_role_professor
 def displaystudentsdetails():
 	if request.method == 'POST':
 		tidoption = request.form['choosetid']
@@ -620,44 +665,6 @@ def displaystudentsdetails():
 		callresults = cur.fetchall()
 		cur.close()
 		return render_template("displaystudentsdetails.html", callresults = callresults)
-
-@app.route('/video_feed', methods=['GET','POST'])
-# @user_role_student
-def video_feed():
-	if request.method == "POST":
-		imgData = request.form['data[imgData]']
-		testid = request.form['data[testid]']
-		voice_db = request.form['data[voice_db]']
-		proctorData = camera.get_frame(imgData)
-		jpg_as_text = proctorData['jpg_as_text']
-		mob_status =proctorData['mob_status']
-		person_status = proctorData['person_status']
-		user_move1 = proctorData['user_move1']
-		user_move2 = proctorData['user_move2']
-		eye_movements = proctorData['eye_movements']
-		cur = mysql.connection.cursor()
-		results = cur.execute('INSERT INTO proctoring_log (email, name, test_id, voice_db, img_log, user_movements_updown, user_movements_lr, user_movements_eyes, phone_detection, person_status, uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-			(email, name, testid, voice_db, jpg_as_text, user_move1, user_move2, eye_movements, mob_status, person_status,uid))
-		mysql.connection.commit()
-		cur.close()
-		if(results > 0):
-			return "recorded image of video"
-		else:
-			return "error in video"
-
-@app.route('/window_event', methods=['GET','POST'])
-# @user_role_student
-def window_event():
-	if request.method == "POST":
-		testid = request.form['testid']
-		cur = mysql.connection.cursor()
-		results = cur.execute('INSERT INTO window_estimation_log (email, test_id, name, window_event, uid) values(%s,%s,%s,%s,%s)', (email, testid, name, 1, uid))
-		mysql.connection.commit()
-		cur.close()
-		if(results > 0):
-			return "recorded window"
-		else:
-			return "error in window"
 
 if __name__ == "__main__":
 	app.run()
