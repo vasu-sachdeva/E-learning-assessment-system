@@ -1,4 +1,7 @@
-## Edited By Durvesh
+#Durvesh -- 18:42 25/06/2023
+#Manav -- 18:42 25/06/2023
+#Vasu
+
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash,session, redirect
 from flask_mysqldb import MySQL
 from flask_mail import Mail, Message
@@ -70,19 +73,6 @@ mysql = MySQL(app)
 sender = 'youremail@abc.com'
 
 YOUR_DOMAIN = 'http://localhost:5000'
-
-# app.secret_key = 'cvproject'
-# mysql = MySQL(app)
-
-# uid = 123456
-# email = "abc@abc.com"
-
-# suid = 234567
-# semail = 'cde@cde.com'
-
-# name = "Vasu"
-# email_std = "a@a.com"
-# sender = 'youremail@abc.com'
 
 @app.before_request
 def make_session_permanent():
@@ -277,7 +267,7 @@ def create_test():
 		print(df)
 		cur = mysql.connection.cursor()
 		for row in df.index:
-			cur.execute('INSERT INTO questions(test_id,qid,q,a,b,c,d,ans,marks,uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', (test_id, df['qid'][row], df['q'][row], df['a'][row], df['b'][row], df['c'][row], df['d'][row], df['ans'][row], df['marks'][row], uid))
+			cur.execute('INSERT INTO questions(test_id,qid,q,a,b,c,d,ans,marks,uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', (test_id, df['qid'][row], df['q'][row], df['a'][row], df['b'][row], df['c'][row], df['d'][row], df['ans'][row], df['marks'][row], session['uid']))
 			cur.connection.commit()
 		start_date = form.start_date.data
 		end_date = form.end_date.data
@@ -295,7 +285,7 @@ def create_test():
 		# proctor_type = form.proctor_type.data
 		print(start_date, end_date, start_time, end_time, start_date_time, end_date_time, neg_mark, calc, duration, password, subject, topic)
 		cur.execute('INSERT INTO teachers (email, test_id, test_type, start, end, duration, show_ans, password, subject, topic, neg_marks, calc, uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-			(email, test_id, "objective", start_date_time, end_date_time, duration, 1, password, subject, topic, neg_mark, calc, uid))
+			(session['email'], test_id, "objective", start_date_time, end_date_time, duration, 1, password, subject, topic, neg_mark, calc, session['uid']))
 		mysql.connection.commit()
 		cur.close()
 		flash(f'Exam ID: {test_id}', 'success')
@@ -326,7 +316,7 @@ def test_generate():
 @user_role_professor
 def viewquestions():
 	cur = mysql.connection.cursor()
-	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s', (email,uid))
+	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s', (session['email'],session['uid']))
 	if results > 0:
 		cresults = cur.fetchall()
 		cur.close()
@@ -499,6 +489,76 @@ def update_quiz(testid, qid):
 	else:
 		flash('ERROR  OCCURED.', 'error')
 		return redirect(url_for('updatetidlist'))
+	
+def neg_marks(email,testid,negm):
+	cur=mysql.connection.cursor()
+	results = cur.execute("select marks,q.qid as qid, \
+				q.ans as correct, ifnull(s.ans,0) as marked from questions q inner join \
+				students s on  s.test_id = q.test_id and s.test_id = %s \
+				and s.email = %s and s.qid = q.qid group by q.qid \
+				order by q.qid asc", (testid, email))
+	data=cur.fetchall()
+
+	sum=0.0
+	for i in range(results):
+		if(str(data[i]['marked']).upper() != '0'):
+			if(str(data[i]['marked']).upper() != str(data[i]['correct']).upper()):
+				sum=sum - (negm/100) * int(data[i]['marks'])
+			elif(str(data[i]['marked']).upper() == str(data[i]['correct']).upper()):
+				sum+=int(data[i]['marks'])
+	return sum
+
+# def totmarks(email,tests): 
+# 	cur = mysql.connection.cursor()
+# 	for test in tests:
+# 		testid = test['test_id']
+# 		results=cur.execute("select neg_marks from teachers where test_id=%s",[testid])
+# 		results=cur.fetchone()
+# 		negm = results['neg_marks']
+# 		data = neg_marks(email,testid,negm)
+# 		return data
+
+def marks_calc(email,testid):
+		cur = mysql.connection.cursor()
+		results=cur.execute("select neg_marks from teachers where test_id=%s",[testid])
+		results=cur.fetchone()
+		negm = results['neg_marks']
+		return neg_marks(email,testid,negm) 
+
+@app.route('/<email>/tests-created')
+@user_role_professor
+def tests_created(email):
+	if email == session['email']:
+		cur = mysql.connection.cursor()
+		results = cur.execute('select * from teachers where email = %s and uid = %s and show_ans = 1', (email,session['uid']))
+		results = cur.fetchall()
+		return render_template('tests_created.html', tests=results)
+	else:
+		flash('You are not authorized', 'danger')
+		return redirect(url_for('professor_index'))
+
+@app.route('/<email>/tests-created/<testid>', methods = ['POST','GET'])
+@user_role_professor
+def student_results(email, testid):
+	if email == session['email']:
+		if request.method =='GET':
+			cur = mysql.connection.cursor()
+			results = cur.execute('select users.name as name,users.email as email, studentTestInfo.test_id as test_id from studentTestInfo, users where test_id = %s and completed = 1 and  users.user_type = %s and studentTestInfo.email=users.email ', (testid,'student'))
+			results = cur.fetchall()
+			cur.close()
+			final = []
+			names = []
+			scores = []
+			count = 1
+			for user in results:
+				score = marks_calc(user['email'], user['test_id'])
+				user['srno'] = count
+				user['marks'] = score
+				final.append([count, user['name'], score])
+				names.append(user['name'])
+				scores.append(score)
+				count+=1
+			return render_template('student_results.html', data=final, labels=names, values=scores)
 
 ###################################### Student DashBoard ##########################################
 
@@ -538,41 +598,7 @@ def tests_given(email):
 			results1.append(neg_marks(a['email'],a['test_id'],a['neg_marks']))
 			studentResults = zip(results,results1)
 		return render_template('obj_result_student.html', tests=studentResults)
-	
-def neg_marks(email,testid,negm):
-	cur=mysql.connection.cursor()
-	results = cur.execute("select marks,q.qid as qid, \
-				q.ans as correct, ifnull(s.ans,0) as marked from questions q inner join \
-				students s on  s.test_id = q.test_id and s.test_id = %s \
-				and s.email = %s and s.qid = q.qid group by q.qid \
-				order by q.qid asc", (testid, email))
-	data=cur.fetchall()
 
-	sum=0.0
-	for i in range(results):
-		if(str(data[i]['marked']).upper() != '0'):
-			if(str(data[i]['marked']).upper() != str(data[i]['correct']).upper()):
-				sum=sum - (negm/100) * int(data[i]['marks'])
-			elif(str(data[i]['marked']).upper() == str(data[i]['correct']).upper()):
-				sum+=int(data[i]['marks'])
-	return sum
-
-def totmarks(email,tests): 
-	cur = mysql.connection.cursor()
-	for test in tests:
-		testid = test['test_id']
-		results=cur.execute("select neg_marks from teachers where test_id=%s",[testid])
-		results=cur.fetchone()
-		negm = results['neg_marks']
-		data = neg_marks(email,testid,negm)
-		return data
-
-def marks_calc(email,testid):
-		cur = mysql.connection.cursor()
-		results=cur.execute("select neg_marks from teachers where test_id=%s",[testid])
-		results=cur.fetchone()
-		negm = results['neg_marks']
-		return neg_marks(email,testid,negm) 
 
 @app.route('/<email>/student_test_history')
 @user_role_student
@@ -597,106 +623,90 @@ def give_test():
 	if request.method == 'POST' and form.validate():
 		test_id = form.test_id.data
 		password_candidate = form.password.data
-		cur1 = mysql.connection.cursor()
-		if results1 > 0:
-			cresults = cur1.fetchone()
-			imgdata2 = cresults['user_image']
-			cur1.close()
-			# nparr1 = np.frombuffer(base64.b64decode(imgdata2), np.uint8)
-			# nparr2 = np.frombuffer(base64.b64decode(imgdata2), np.uint8)
-			# image1 = cv2.imdecode(nparr1, cv2.COLOR_BGR2GRAY)
-			# image2 = cv2.imdecode(nparr2, cv2.COLOR_BGR2GRAY)
-			# img_result  = DeepFace.verify(image1, image2, enforce_detection = False)
-			# print(img_result)
-			# if img_result["verified"] == True:
-			img_result = True
-			if img_result == True:
-				cur = mysql.connection.cursor()
-				results = cur.execute('SELECT * from teachers where test_id = %s', [test_id])
-				if results > 0:
-					data = cur.fetchone()
-					password = data['password']
-					duration = data['duration']
-					calc = data['calc']
-					subject = data['subject']
-					topic = data['topic']
-					start = data['start']
-					start = str(start)
-					end = data['end']
-					end = str(end)
-					proctortype = data['proctoring_type']
-					if password == password_candidate:
-						now = datetime.now()
-						now = now.strftime("%Y-%m-%d %H:%M:%S")
-						now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
-						if datetime.strptime(start,"%Y-%m-%d %H:%M:%S") < now and datetime.strptime(end,"%Y-%m-%d %H:%M:%S") > now:
-							results = cur.execute('SELECT time_to_sec(time_left) as time_left,completed from studentTestInfo where email = %s and test_id = %s', ('cde@cde.com', test_id))
-							if results > 0:
-								results = cur.fetchone()
-								# print(results)
-								is_completed = results['completed']
-								if is_completed == 0:
-									time_left = results['time_left']
-									if time_left <= duration:
-										duration = time_left
-										results = cur.execute('SELECT qid , ans from students where email = %s and test_id = %s and uid = %s', ('cde@cde.com', test_id, 234567))
-										marked_ans = {}
-										if results > 0:
-											results = cur.fetchall()
-											for row in results:
-												print(row['qid'])
-												qiddb = ""+row['qid']
-												print(qiddb)
-												print(type(marked_ans))
-												marked_ans[qiddb] = row['ans']
-											marked_ans = json.dumps(marked_ans)
-								else:
-									flash('Exam already given', 'success')
-									return redirect(url_for('give_test'))
-							else:
-								cur.execute('INSERT into studentTestInfo (email, test_id,time_left,uid) values(%s,%s,SEC_TO_TIME(%s),%s)', ('cde@cde.com', test_id, duration, 234567))
-								mysql.connection.commit()
-								results = cur.execute('SELECT time_to_sec(time_left) as time_left,completed from studentTestInfo where email = %s and test_id = %s and uid = %s', ('cde@cde.com', test_id, 234567))
+		cur = mysql.connection.cursor()
+		results = cur.execute('SELECT * from teachers where test_id = %s', [test_id])
+		if results > 0:
+			data = cur.fetchone()
+			password = data['password']
+			duration = data['duration']
+			calc = data['calc']
+			subject = data['subject']
+			topic = data['topic']
+			start = data['start']
+			start = str(start)
+			end = data['end']
+			end = str(end)
+			# proctortype = data['proctoring_type']
+			# print(test_id)
+			if password == password_candidate:
+				now = datetime.now()
+				now = now.strftime("%Y-%m-%d %H:%M:%S")
+				now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
+				if datetime.strptime(start,"%Y-%m-%d %H:%M:%S") < now and datetime.strptime(end,"%Y-%m-%d %H:%M:%S") > now:
+					results = cur.execute('SELECT time_to_sec(time_left) as time_left,completed from studentTestInfo where email = %s and test_id = %s', (session['email'], test_id))
+					if results > 0:
+						results = cur.fetchone()
+						# print(results)
+						is_completed = results['completed']
+						if is_completed == 0:
+							time_left = results['time_left']
+							if time_left <= duration:
+								duration = time_left
+								results = cur.execute('SELECT qid , ans from students where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
+								marked_ans = {}
 								if results > 0:
-									results = cur.fetchone()
-									is_completed = results['completed']
-									if is_completed == 0:
-										time_left = results['time_left']
-										if time_left <= duration:
-											duration = time_left
-											results = cur.execute('SELECT * from students where email = %s and test_id = %s and uid = %s', ('cde@cde.com', test_id, 234567))
-											marked_ans = {}
-											if results > 0:
-												results = cur.fetchall()
-												for row in results:
-													marked_ans[row['qid']] = row['ans']
-												marked_ans = json.dumps(marked_ans)
+									results = cur.fetchall()
+									for row in results:
+										# print(row['qid'])
+										qiddb = ""+row['qid']
+										# print(qiddb)
+										# print(type(marked_ans))
+										marked_ans[qiddb] = row['ans']
+									marked_ans = json.dumps(marked_ans)
 						else:
-							if datetime.strptime(start,"%Y-%m-%d %H:%M:%S") > now:
-								flash(f'Exam start time is {start}', 'danger')
-							else:
-								flash(f'Exam has ended', 'danger')
+							flash('Exam already given', 'success')
 							return redirect(url_for('give_test'))
-						return redirect(url_for('test' , testid = test_id))
 					else:
-						flash('Invalid password', 'danger')
-						return redirect(url_for('give_test'))
-				flash('Invalid testid', 'danger')
-				cur.close()
-				return redirect(url_for('give_test'))
+						cur.execute('INSERT into studentTestInfo (email, test_id,time_left,uid) values(%s,%s,SEC_TO_TIME(%s),%s)', (session['email'], test_id, duration, session['uid']))
+						mysql.connection.commit()
+						results = cur.execute('SELECT time_to_sec(time_left) as time_left,completed from studentTestInfo where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
+						if results > 0:
+							results = cur.fetchone()
+							is_completed = results['completed']
+							if is_completed == 0:
+								time_left = results['time_left']
+								if time_left <= duration:
+									duration = time_left
+									results = cur.execute('SELECT * from students where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
+									marked_ans = {}
+									if results > 0:
+										results = cur.fetchall()
+										for row in results:
+											marked_ans[row['qid']] = row['ans']
+										marked_ans = json.dumps(marked_ans)
+				else:
+					if datetime.strptime(start,"%Y-%m-%d %H:%M:%S") > now:
+						flash(f'Exam start time is {start}', 'danger')
+					else:
+						flash(f'Exam has ended', 'danger')
+					return redirect(url_for('give_test'))
+				return redirect(url_for('test' , testid = test_id))
 			else:
-				flash('Image not Verified', 'danger')
+				flash('Invalid password', 'danger')
 				return redirect(url_for('give_test'))
+		flash('Invalid testid', 'danger')
+		cur.close()
+		return redirect(url_for('give_test'))
 	return render_template('give_test.html', form = form)
 
 @app.route('/give-test/<testid>', methods=['GET','POST'])
 @user_role_student
 def test(testid):
-	global duration, marked_ans, calc, subject, topic, proctortype
+	global duration, marked_ans, calc, subject, topic
 	if request.method == 'GET':
 		try:
 			data = {'duration': duration, 'marks': '', 'q': '', 'a': '', 'b':'','c':'','d':'' }
-			return render_template('testquiz.html' ,**data, answers=marked_ans, calc=calc, subject=subject, topic=topic, tid=testid, proctortype=proctortype)
+			return render_template('testquiz.html' ,**data, answers=marked_ans, calc=calc, subject=subject, topic=topic, tid=testid)
 		except:
 			return redirect(url_for('give_test'))
 	else:
@@ -714,20 +724,20 @@ def test(testid):
 			qid = request.form['qid']
 			ans = request.form['ans']
 			cur = mysql.connection.cursor()
-			results = cur.execute('SELECT * from students where test_id =%s and qid = %s and email = %s', (testid, qid, semail))
+			results = cur.execute('SELECT * from students where test_id =%s and qid = %s and email = %s', (testid, qid, session['email']))
 			if results > 0:
-				cur.execute('UPDATE students set ans = %s where test_id = %s and qid = %s and email = %s', (testid, qid, semail))
+				cur.execute('UPDATE students set ans = %s where test_id = %s and qid = %s and email = %s', (testid, qid, session['email']))
 				mysql.connection.commit()
 				cur.close()
 			else:
-				cur.execute('INSERT INTO students(email,test_id,qid,ans,uid) values(%s,%s,%s,%s,%s)', (semail, testid, qid, ans, suid))
+				cur.execute('INSERT INTO students(email,test_id,qid,ans,uid) values(%s,%s,%s,%s,%s)', (session['email'], testid, qid, ans, session['uid']))
 				mysql.connection.commit()
 				cur.close()
 		elif flag=='time':
 			cur = mysql.connection.cursor()
 			time_left = request.form['time']
 			try:
-				cur.execute('UPDATE studentTestInfo set time_left=SEC_TO_TIME(%s) where test_id = %s and email = %s and uid = %s and completed=0', (time_left, testid, semail, suid))
+				cur.execute('UPDATE studentTestInfo set time_left=SEC_TO_TIME(%s) where test_id = %s and email = %s and uid = %s and completed=0', (time_left, testid, session['email'], session['uid']))
 				mysql.connection.commit()
 				cur.close()
 				return json.dumps({'time':'fired'})
@@ -735,7 +745,7 @@ def test(testid):
 				pass
 		else:
 			cur = mysql.connection.cursor()
-			cur.execute('UPDATE studentTestInfo set completed=1,time_left=sec_to_time(0) where test_id = %s and email = %s and uid = %s', (testid, semail,suid))
+			cur.execute('UPDATE studentTestInfo set completed=1,time_left=sec_to_time(0) where test_id = %s and email = %s and uid = %s', (testid, session['email'],session['uid']))
 			mysql.connection.commit()
 			cur.close()
 			flash("Exam submitted successfully", 'info')
@@ -756,32 +766,7 @@ def random_gen():
 			return json.dumps(nos)
 
 
-# # PROCTORING
-
-# @app.route('/viewstudentslogs', methods=['GET'])
-# # @user_role_professor
-# def viewstudentslogs():
-# 	cur = mysql.connection.cursor()
-# 	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s and proctoring_type = 0', (email, uid))
-# 	if results > 0:
-# 		cresults = cur.fetchall()
-# 		cur.close()
-# 		return render_template("viewstudentslogs.html", cresults = cresults)
-# 	else:
-# 		return render_template("viewstudentslogs.html", cresults = None)
-
-# @app.route('/displaystudentsdetails', methods=['GET','POST'])
-# # @user_role_professor
-# def displaystudentsdetails():
-# 	if request.method == 'POST':
-# 		tidoption = request.form['choosetid']
-# 		cur = mysql.connection.cursor()
-# 		cur.execute('SELECT DISTINCT email,test_id from proctoring_log where test_id = %s', [tidoption])
-# 		callresults = cur.fetchall()
-# 		cur.close()
-# 		return render_template("displaystudentsdetails.html", callresults = callresults)
-
 if __name__ == "__main__":
 	app.run()
 
-# updated by vasu on 17/5 9:55am
+
