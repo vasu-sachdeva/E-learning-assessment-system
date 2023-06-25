@@ -1,4 +1,5 @@
 ## Edited By Durvesh
+
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash,session, redirect
 from flask_mysqldb import MySQL
 from flask_mail import Mail, Message
@@ -16,16 +17,11 @@ from objective import ObjectiveTest
 import numpy as np
 import cv2
 import json
-import stripe
 import base64
-from flask_session import Session
-from flask_cors import CORS, cross_origin
 # import camera
 from deepface import DeepFace
 
 app = Flask(__name__)
-
-app.secret_key= 'sem6project'
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
@@ -41,52 +37,20 @@ app.config['MAIL_PASSWORD'] = 'hhcgxhwwmhthepal'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
-app.config['SESSION_COOKIE_SAMESITE'] = "None"
-
-app.config['SESSION_TYPE'] = 'filesystem'
-
-app.config["TEMPLATES_AUTO_RELOAD"] = True
-
-stripe_keys = {
-    "secret_key": "dummy",
-    "publishable_key": "dummy",
-}
-
-stripe.api_key = stripe_keys["secret_key"]
-
 mail = Mail(app)
 
-sess = Session()
-sess.init_app(app)
-
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-
-cors = CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
-
+app.secret_key = 'cvproject'
 mysql = MySQL(app)
 
+uid = 123456
+email = "abc@abc.com"
+
+suid = 234567
+semail = 'cde@cde.com'
+
+name = "Vasu"
+email_std = "a@a.com"
 sender = 'youremail@abc.com'
-
-YOUR_DOMAIN = 'http://localhost:5000'
-
-# app.secret_key = 'cvproject'
-# mysql = MySQL(app)
-
-# uid = 123456
-# email = "abc@abc.com"
-
-# suid = 234567
-# semail = 'cde@cde.com'
-
-# name = "Vasu"
-# email_std = "a@a.com"
-# sender = 'youremail@abc.com'
-
-@app.before_request
-def make_session_permanent():
-	session.permanent = True
 
 def user_role_professor(f):
 	@wraps(f)
@@ -97,20 +61,6 @@ def user_role_professor(f):
 			else:
 				flash('You dont have privilege to access this page!','danger')
 				return render_template("404.html")
-		else:
-			flash('Unauthorized, Please login!','danger')
-			return redirect(url_for('login'))
-	return wrap
-
-def user_role_student(f):
-	@wraps(f)
-	def wrap(*args, **kwargs):
-		if 'logged_in' in session:
-			if session['user_role']=="student":
-				return f(*args, **kwargs)
-			else:
-				flash('You dont have privilege to access this page!','danger')
-				return render_template("404.html") 
 		else:
 			flash('Unauthorized, Please login!','danger')
 			return redirect(url_for('login'))
@@ -161,19 +111,44 @@ def register():
 		email = request.form['email']
 		password = request.form['password']
 		user_type = request.form['user_type']
-		# imgdata = request.form['image_hidden']
-		session['tempName'] = name
-		session['tempEmail'] = email
-		session['tempPassword'] = password
-		session['tempUT'] = user_type
-		# session['tempImage'] = imgdata
-		sesOTP = generateOTP()
-		session['tempOTP'] = sesOTP
-		msg1 = Message('E-Learning Assessment System - OTP Verification', sender = sender, recipients = [email])
+		# session['tempName'] = name
+		# session['tempEmail'] = email
+		# session['tempPassword'] = password
+		# session['tempUT'] = user_type
+		# sesOTP = generateOTP()
+		# session['tempOTP'] = sesOTP
+		msg1 = Message('MyProctor.ai - OTP Verification', sender = sender, recipients = [email])
 		msg1.body = "New Account opening - Your OTP Verfication code is "+sesOTP+"."
 		mail.send(msg1)
 		return redirect(url_for('verifyEmail')) 
 	return render_template('register.html')
+
+
+@app.route('/verifyEmail', methods=['GET','POST'])
+def verifyEmail():
+	if request.method == 'POST':
+		theOTP = request.form['eotp']
+		# mOTP = session['tempOTP']
+		# dbName = session['tempName']
+		# dbEmail = session['tempEmail']
+		# dbPassword = session['tempPassword']
+		# dbUser_type = session['tempUT']
+		# dbImgdata = session['tempImage']
+		if(theOTP == OTP):
+			cur = mysql.connection.cursor()
+			ar = cur.execute('INSERT INTO users(name, email, password, user_type, user_image, user_login) values(%s,%s,%s,%s,%s,%s)', (dbName, dbEmail, dbPassword, dbUser_type, dbImgdata,0))
+			mysql.connection.commit()
+			if ar > 0:
+				flash("Thanks for registering! You are sucessfully verified!.")
+				return  redirect(url_for('login'))
+			else:
+				flash("Error Occurred!")
+				return  redirect(url_for('login')) 
+			cur.close()
+			session.clear()
+		else:
+			return render_template('register.html',error="OTP is incorrect.")
+	return render_template('verifyEmail.html')
 
 @app.route('/login', methods=['GET','POST'])
 def login():
@@ -181,89 +156,27 @@ def login():
 		email = request.form['email']
 		password_candidate = request.form['password']
 		user_type = request.form['user_type']
-		# imgdata1 = request.form['image_hidden']
 		cur = mysql.connection.cursor()
-		# results1 = cur.execute('SELECT uid, name, email, password, user_type, user_image from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
-		results1 = cur.execute('SELECT uid, name, email, password, user_type from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
+		results1 = cur.execute('SELECT uid, name, email, password, user_type, user_image from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
 		if results1 > 0:
 			cresults = cur.fetchone()
-			# imgdata2 = cresults['user_image']
 			password = cresults['password']
 			name = cresults['name']
 			uid = cresults['uid']
-			# nparr1 = np.frombuffer(base64.b64decode(imgdata1), np.uint8)
-			# nparr2 = np.frombuffer(base64.b64decode(imgdata2), np.uint8)
-			# image1 = cv2.imdecode(nparr1, cv2.COLOR_BGR2GRAY)
-			# image2 = cv2.imdecode(nparr2, cv2.COLOR_BGR2GRAY)
-			# img_result  = DeepFace.verify(image1, image2, enforce_detection = False)
-			if password == password_candidate:
-				results2 = cur.execute('UPDATE users set user_login = 1 where email = %s' , [email])
-				mysql.connection.commit()
-				cur.close()
-				if results2 > 0:
-					session['logged_in'] = True
-					session['email'] = email
-					session['name'] = name
-					session['user_role'] = user_type
-					session['uid'] = uid
-					if user_type == "student":
-						return redirect(url_for('student_index'))
-					else:
-						return redirect(url_for('professor_index'))
-				else:
-					error = 'Error Occurred!'
-					return render_template('login.html', error=error)	
-			else:
-				error = 'You have entered Invalid password or Already login'
-				return render_template('login.html', error=error)
-			
 		else:
 			error = 'Already Login or Email was not found!'
 			return render_template('login.html', error=error)
 	return render_template('login.html')
 
-@app.route('/verifyEmail', methods=['GET','POST'])
-def verifyEmail():
-	if request.method == 'POST':
-		theOTP = request.form['eotp']
-		if 'tempName' in session and 'tempOTP' in session and 'tempEmail' in session and 'tempPassword' in session and 'tempUT' in session:
-			dbName = session['tempName']
-			mOTP = session['tempOTP']
-			dbEmail = session['tempEmail']
-			dbPassword = session['tempPassword']
-			dbUser_type = session['tempUT']
-			# dbImgdata = session['tempImage']
-			if(theOTP == mOTP):
-				cur = mysql.connection.cursor()
-				ar = cur.execute('INSERT INTO users(name, email, password, user_type, user_login) values(%s,%s,%s,%s,%s)', (dbName, dbEmail, dbPassword, dbUser_type, 0))
-				mysql.connection.commit()
-				cur.close()
-				session.clear()
-				if ar > 0:
-					flash("Thanks for registering! You are sucessfully verified!.")
-					return  redirect(url_for('login'))
-				else:
-					flash("Error Occurred!")
-					return  redirect(url_for('login')) 
-			else:
-				return render_template('register.html',error="OTP is incorrect.")
-		else:
-			flash("Session data is missing. Please go through the registration process first.")
-			return redirect(url_for('register'))
-	return render_template('verifyEmail.html')
-
 @app.route("/professor_index")
-@user_role_professor
 def professor_index():
 	return render_template('professor_index.html')
 
 @app.route("/student_index")
-@user_role_student
 def student_index():
 	return render_template('student_index.html')
 
 @app.route("/create-test", methods = ['GET', 'POST'])
-@user_role_professor
 def create_test():
 	form = UploadForm()
 	if request.method=='POST' and form.validate_on_submit():
@@ -303,12 +216,10 @@ def create_test():
 	return render_template('create_test.html', form = form)
 
 @app.route('/generate_test')
-@user_role_professor
 def generate_test():
 	return render_template('generate_test.html')
 
 @app.route('/test_generate', methods=["GET", "POST"])
-@user_role_professor
 def test_generate():
 	if request.method == "POST":
 		inputText = request.form["itext"]
@@ -320,10 +231,10 @@ def test_generate():
 			testgenerate = zip(question_list, answer_list)
 			return render_template('generatedtestdata.html', cresults = testgenerate)
 		else:
-			return None	
+			return None
 
 @app.route('/viewquestions', methods=['GET'])
-@user_role_professor
+# @user_role_professor
 def viewquestions():
 	cur = mysql.connection.cursor()
 	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s', (email,uid))
@@ -335,7 +246,7 @@ def viewquestions():
 		return render_template("viewquestions.html", cresults = None)
 
 @app.route('/displayquestions',methods=['POST'])
-@user_role_professor
+# @user_role_professor
 def displayquestions():
 	tid = request.form['choosetid']
 	cur = mysql.connection.cursor()
@@ -348,7 +259,7 @@ def displayquestions():
 @app.route(f'/disptests', methods=['GET'])
 def disptests():
 	cur = mysql.connection.cursor()
-	res = cur.execute('SELECT test_id,password,subject,topic FROM teachers WHERE uid = %s and email = %s',(session['uid'],session['email']))
+	res = cur.execute('SELECT test_id,password,subject,topic FROM teachers WHERE uid = %s and email = %s',(uid,email))
 	if res>0:
 		tests = cur.fetchall()
 		cur.close()
@@ -357,14 +268,14 @@ def disptests():
 
 
 @app.route('/deltidlist', methods=['GET'])
-@user_role_professor
+# @user_role_professor
 def deltidlist():
 	cur = mysql.connection.cursor()
-	results = cur.execute('SELECT * from teachers where email = %s and uid = %s', (session['uid'],session['email']))
-	# print(results)
+	results = cur.execute('SELECT * from teachers where email = %s and uid = %s', (email,uid))
+	print(results)
 	if results > 0:
 		cresults = cur.fetchall()
-		# print(cresults)
+		print(cresults)
 		now = datetime.now()
 		now = now.strftime("%Y-%m-%d %H:%M:%S")
 		now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
@@ -379,18 +290,18 @@ def deltidlist():
 
 
 @app.route('/deldispques', methods=['POST'])
-@user_role_professor
+# @user_role_professor
 def deldispques():
 	if request.method == 'POST':
 		tidoption = request.form['choosetid']
 		cur = mysql.connection.cursor()
-		cur.execute('SELECT * from questions where test_id = %s and uid = %s', (tidoption,session['uid']))
+		cur.execute('SELECT * from questions where test_id = %s and uid = %s', (tidoption,uid))
 		callresults = cur.fetchall()
 		cur.close()
 		return render_template("deldispques.html", callresults = callresults, tid = tidoption)
 
 @app.route('/delete_questions/<testid>', methods=['POST'])
-@user_role_professor
+# @user_role_professor
 def delete_questions(testid):
 	cur = mysql.connection.cursor()
 	msg = '' 
@@ -400,13 +311,13 @@ def delete_questions(testid):
 			if ',' in testqdel:
 				testqdel = testqdel.split(',')
 				for getid in testqdel:
-					cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,getid,session['uid']))
+					cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,getid,uid))
 					mysql.connection.commit()
 				resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
 				resp.status_code = 200
 				return resp
 			else:
-				cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,testqdel,session['uid']))
+				cur.execute('DELETE FROM questions WHERE test_id = %s and qid =%s and uid = %s', (testid,testqdel,uid))
 				mysql.connection.commit()
 				resp = jsonify('<span style=\'color:green;\'>Questions deleted successfully</span>')
 				resp.status_code = 200
@@ -427,10 +338,10 @@ def delete_questions(testid):
 
 
 @app.route('/<testid>/<qid>')
-@user_role_professor
+# @user_role_professor
 def del_qid(testid, qid):
 	cur = mysql.connection.cursor()
-	results = cur.execute('DELETE FROM questions where test_id = %s and qid = %s and uid = %s', (testid,qid,session['uid']))
+	results = cur.execute('DELETE FROM questions where test_id = %s and qid = %s and uid = %s', (testid,qid,uid))
 	mysql.connection.commit()
 	if results>0:
 		msg="Deleted successfully"
@@ -443,10 +354,10 @@ def del_qid(testid, qid):
 ################### UPDATE QUESTIONS ######################
 
 @app.route('/updatetidlist', methods=['GET'])
-@user_role_professor
+# @user_role_professor
 def updatetidlist():
 	cur = mysql.connection.cursor()
-	results = cur.execute('SELECT * from teachers where email = %s and uid = %s', (session['uid'],session['email']))
+	results = cur.execute('SELECT * from teachers where email = %s and uid = %s', (email,uid))
 	if results > 0:
 		cresults = cur.fetchall()
 		now = datetime.now()
@@ -462,23 +373,23 @@ def updatetidlist():
 		return render_template("updatetidlist.html", cresults = None)
 
 @app.route('/updatedispques', methods=['GET','POST'])
-@user_role_professor
+# @user_role_professor
 def updatedispques():
 	if request.method == 'POST':
 		tidoption = request.form['choosetid']
 		# et = examtypecheck(tidoption)
 		cur = mysql.connection.cursor()
-		cur.execute('SELECT * from questions where test_id = %s and uid = %s', (tidoption,session['uid']))
+		cur.execute('SELECT * from questions where test_id = %s and uid = %s', (tidoption,uid))
 		callresults = cur.fetchall()
 		cur.close()
 		return render_template("updatedispques.html", callresults = callresults)
 
 @app.route('/update/<testid>/<qid>', methods=['GET','POST'])
-@user_role_professor
+# @user_role_professor
 def update_quiz(testid, qid):
 	if request.method == 'GET':
 		cur = mysql.connection.cursor()
-		cur.execute('SELECT * FROM questions where test_id = %s and qid =%s and uid = %s', (testid,qid,session['uid']))
+		cur.execute('SELECT * FROM questions where test_id = %s and qid =%s and uid = %s', (testid,qid,uid))
 		uresults = cur.fetchall()
 		mysql.connection.commit()
 		return render_template("updateQuestions.html", uresults=uresults)
@@ -491,7 +402,7 @@ def update_quiz(testid, qid):
 		anso = request.form['anso']
 		markso = request.form['mko']
 		cur = mysql.connection.cursor()
-		cur.execute('UPDATE questions SET q = %s, a = %s, b = %s, c = %s, d = %s, ans = %s, marks = %s where test_id = %s and qid = %s and uid = %s', (ques,ao,bo,co,do,anso,markso,testid,qid,session['uid']))
+		cur.execute('UPDATE questions SET q = %s, a = %s, b = %s, c = %s, d = %s, ans = %s, marks = %s where test_id = %s and qid = %s and uid = %s', (ques,ao,bo,co,do,anso,markso,testid,qid,uid))
 		cur.connection.commit()
 		flash('Updated successfully.', 'success')
 		cur.close()
@@ -509,18 +420,18 @@ class TestForm(Form):
 
 ############ take/give Exam #################
 @app.route('/<email>/tests-given', methods = ['POST','GET'])
-@user_role_student
+#@user_role_student
 def tests_given(email):
 	if request.method == "GET":
-		if email == session['email']:
-			cur = mysql.connection.cursor()
-			resultsTestids = cur.execute('select studenttestinfo.test_id as test_id from studenttestinfo,teachers where studenttestinfo.email = %s and studenttestinfo.uid = %s and studenttestinfo.completed=1 and teachers.test_id = studenttestinfo.test_id and teachers.show_ans = 1 ', (email, session['uid']))
-			resultsTestids = cur.fetchall()
-			cur.close()
-			return render_template('tests_given.html', cresults = resultsTestids)
-		else:
-			flash('You are not authorized', 'danger')
-		return redirect(url_for('student_index'))
+		# if email == session['email']:
+		cur = mysql.connection.cursor()
+		resultsTestids = cur.execute('select studenttestinfo.test_id as test_id from studenttestinfo,teachers where studenttestinfo.email = %s and studenttestinfo.uid = %s and studenttestinfo.completed=1 and teachers.test_id = studenttestinfo.test_id and teachers.show_ans = 1 ', (email, uid))
+		resultsTestids = cur.fetchall()
+		cur.close()
+		return render_template('tests_given.html', cresults = resultsTestids)
+		# else:
+		# 		flash('You are not authorized', 'danger')
+		# 	return redirect(url_for('student_index'))
 	elif request.method == "POST":
 		tidoption = request.form['choosetid']
 		cur = mysql.connection.cursor()
@@ -538,66 +449,36 @@ def tests_given(email):
 			results1.append(neg_marks(a['email'],a['test_id'],a['neg_marks']))
 			studentResults = zip(results,results1)
 		return render_template('obj_result_student.html', tests=studentResults)
-	
-def neg_marks(email,testid,negm):
-	cur=mysql.connection.cursor()
-	results = cur.execute("select marks,q.qid as qid, \
-				q.ans as correct, ifnull(s.ans,0) as marked from questions q inner join \
-				students s on  s.test_id = q.test_id and s.test_id = %s \
-				and s.email = %s and s.qid = q.qid group by q.qid \
-				order by q.qid asc", (testid, email))
-	data=cur.fetchall()
 
-	sum=0.0
-	for i in range(results):
-		if(str(data[i]['marked']).upper() != '0'):
-			if(str(data[i]['marked']).upper() != str(data[i]['correct']).upper()):
-				sum=sum - (negm/100) * int(data[i]['marks'])
-			elif(str(data[i]['marked']).upper() == str(data[i]['correct']).upper()):
-				sum+=int(data[i]['marks'])
-	return sum
-
-def totmarks(email,tests): 
-	cur = mysql.connection.cursor()
-	for test in tests:
-		testid = test['test_id']
-		results=cur.execute("select neg_marks from teachers where test_id=%s",[testid])
-		results=cur.fetchone()
-		negm = results['neg_marks']
-		data = neg_marks(email,testid,negm)
-		return data
-
-def marks_calc(email,testid):
-		cur = mysql.connection.cursor()
-		results=cur.execute("select neg_marks from teachers where test_id=%s",[testid])
-		results=cur.fetchone()
-		negm = results['neg_marks']
-		return neg_marks(email,testid,negm) 
-
-@app.route('/<email>/student_test_history')
-@user_role_student
-def student_test_history(email):
-	if email == session['email']:
+@app.route('/<email_id>/student_test_history')
+def student_test_history(email_id):
+	if email_id == email_std:
 		cur = mysql.connection.cursor()
 		results = cur.execute('SELECT a.test_id, b.subject, b.topic \
 			from studenttestinfo a, teachers b where a.test_id = b.test_id and a.email=%s  \
-			and a.completed=1', [email])
+			and a.completed=1', [email_id])
 		results = cur.fetchall()
 		return render_template('student_test_history.html', tests=results)
 	else:
 		flash('You are not authorized', 'danger')
 		return redirect(url_for('student_index'))
 
+def neg_marks(email,testid,negm):
+	cur=mysql.connection.cursor()
+	results = cur.execute("SELECT q.marks, q.qid AS qid, q.ans AS correct, IFNULL(s.ans, 0) AS marked FROM questions q INNER JOIN students s ON s.test_id = q.test_id AND s.test_id = %s AND s.email = %s AND s.qid = q.qid GROUP BY q.marks, q.qid, q.ans, s.ans ORDER BY q.qid ASC", (testid, email))
+	data=cur.fetchall()
 
 @app.route("/give-test", methods = ['GET', 'POST'])
-@user_role_student
+# @user_role_student
 def give_test():
 	global duration, marked_ans, calc, subject, topic, proctortype
 	form = TestForm(request.form)
 	if request.method == 'POST' and form.validate():
 		test_id = form.test_id.data
 		password_candidate = form.password.data
+		# imgdata1 = form.image_hidden_form.data
 		cur1 = mysql.connection.cursor()
+		results1 = cur1.execute('SELECT user_image from users where email = %s and user_type = %s ', ('cde@cde.com','student'))
 		if results1 > 0:
 			cresults = cur1.fetchone()
 			imgdata2 = cresults['user_image']
@@ -690,12 +571,16 @@ def give_test():
 	return render_template('give_test.html', form = form)
 
 @app.route('/give-test/<testid>', methods=['GET','POST'])
-@user_role_student
+# @user_role_student
 def test(testid):
 	global duration, marked_ans, calc, subject, topic, proctortype
 	if request.method == 'GET':
+		data = {'duration': duration, 'marks': '', 'q': '', 'a': '', 'b':'','c':'','d':'' }
+		# print("hi")
+		# return render_template('testquiz.html' ,**data, answers=marked_ans, calc=calc, subject=subject, topic=topic, tid=testid, proctortype=proctortype)
 		try:
 			data = {'duration': duration, 'marks': '', 'q': '', 'a': '', 'b':'','c':'','d':'' }
+			# print("hi")
 			return render_template('testquiz.html' ,**data, answers=marked_ans, calc=calc, subject=subject, topic=topic, tid=testid, proctortype=proctortype)
 		except:
 			return redirect(url_for('give_test'))
@@ -756,30 +641,30 @@ def random_gen():
 			return json.dumps(nos)
 
 
-# # PROCTORING
+# PROCTORING
 
-# @app.route('/viewstudentslogs', methods=['GET'])
-# # @user_role_professor
-# def viewstudentslogs():
-# 	cur = mysql.connection.cursor()
-# 	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s and proctoring_type = 0', (email, uid))
-# 	if results > 0:
-# 		cresults = cur.fetchall()
-# 		cur.close()
-# 		return render_template("viewstudentslogs.html", cresults = cresults)
-# 	else:
-# 		return render_template("viewstudentslogs.html", cresults = None)
+@app.route('/viewstudentslogs', methods=['GET'])
+# @user_role_professor
+def viewstudentslogs():
+	cur = mysql.connection.cursor()
+	results = cur.execute('SELECT test_id from teachers where email = %s and uid = %s and proctoring_type = 0', (email, uid))
+	if results > 0:
+		cresults = cur.fetchall()
+		cur.close()
+		return render_template("viewstudentslogs.html", cresults = cresults)
+	else:
+		return render_template("viewstudentslogs.html", cresults = None)
 
-# @app.route('/displaystudentsdetails', methods=['GET','POST'])
-# # @user_role_professor
-# def displaystudentsdetails():
-# 	if request.method == 'POST':
-# 		tidoption = request.form['choosetid']
-# 		cur = mysql.connection.cursor()
-# 		cur.execute('SELECT DISTINCT email,test_id from proctoring_log where test_id = %s', [tidoption])
-# 		callresults = cur.fetchall()
-# 		cur.close()
-# 		return render_template("displaystudentsdetails.html", callresults = callresults)
+@app.route('/displaystudentsdetails', methods=['GET','POST'])
+# @user_role_professor
+def displaystudentsdetails():
+	if request.method == 'POST':
+		tidoption = request.form['choosetid']
+		cur = mysql.connection.cursor()
+		cur.execute('SELECT DISTINCT email,test_id from proctoring_log where test_id = %s', [tidoption])
+		callresults = cur.fetchall()
+		cur.close()
+		return render_template("displaystudentsdetails.html", callresults = callresults)
 
 if __name__ == "__main__":
 	app.run()
