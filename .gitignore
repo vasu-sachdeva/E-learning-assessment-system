@@ -1,4 +1,4 @@
 fbconfig.json
 fbAdminConfig.json
 env/
-static/
+flask_session/
