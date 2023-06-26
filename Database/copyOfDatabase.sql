@@ -111,7 +111,7 @@ CREATE TABLE `teachers` (
   `test_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `test_type` varchar(75) COLLATE utf8mb4_unicode_ci NOT NULL,
   `start` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `end` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `end` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP ,
   `duration` int NOT NULL,
   `show_ans` int NOT NULL,
   `password` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -122,8 +122,10 @@ CREATE TABLE `teachers` (
   `proctoring_type` tinyint NOT NULL DEFAULT '0',
   `uid` bigint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `teachers` (`tid`, `email`, `test_id`, `test_type`, `start`, `end`, `duration`, `show_ans`, `password`, `subject`, `topic`, `neg_marks`, `calc`, `proctoring_type`, `uid`)
-VALUES (4, 'abc@abc.com', 'test123', 'objective', '2023-05-16 09:00:00', '2023-05-16 10:30:00', 90, 1, 'password123', 'Mathematics', 'Algebra', 1, 1, 0, 123456);
+
+
+-- INSERT INTO `teachers` (`tid`, `email`, `test_id`, `test_type`, `start`, `end`, `duration`, `show_ans`, `password`, `subject`, `topic`, `neg_marks`, `calc`, `proctoring_type`, `uid`)
+-- VALUES (4, 'abc@abc.com', 'test123', 'objective', '2023-05-16 09:00:00', '2023-05-16 10:30:00', 90, 1, 'password123', 'Mathematics', 'Algebra', 1, 1, 0, 123456);
 
 -- --------------------------------------------------------
 
@@ -138,7 +140,7 @@ CREATE TABLE `users` (
   `password` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `register_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `user_type` varchar(25) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `user_login` tinyint NOT NULL,
+  `user_login` tinyint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- INSERT INTO `quizapp`.`users`

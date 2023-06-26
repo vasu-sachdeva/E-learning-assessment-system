@@ -12,6 +12,7 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
+-- SET GLOBAL sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -122,8 +123,8 @@ CREATE TABLE `teachers` (
   `proctoring_type` tinyint NOT NULL DEFAULT '0',
   `uid` bigint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `teachers` (`tid`, `email`, `test_id`, `test_type`, `start`, `end`, `duration`, `show_ans`, `password`, `subject`, `topic`, `neg_marks`, `calc`, `proctoring_type`, `uid`)
-VALUES (4, 'abc@abc.com', 'test123', 'objective', '2023-05-16 09:00:00', '2023-05-16 10:30:00', 90, 1, 'password123', 'Mathematics', 'Algebra', 1, 1, 0, 123456);
+-- INSERT INTO `teachers` (`tid`, `email`, `test_id`, `test_type`, `start`, `end`, `duration`, `show_ans`, `password`, `subject`, `topic`, `neg_marks`, `calc`, `proctoring_type`, `uid`)
+-- VALUES (4, 'abc@abc.com', 'test123', 'objective', '2023-05-16 09:00:00', '2023-05-16 10:30:00', 90, 1, 'password123', 'Mathematics', 'Algebra', 1, 1, 0, 123456);
 
 -- --------------------------------------------------------
 
@@ -138,7 +139,7 @@ CREATE TABLE `users` (
   `password` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `register_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `user_type` varchar(25) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `user_login` tinyint NOT NULL,
+  `user_login` tinyint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- INSERT INTO `quizapp`.`users`
@@ -333,7 +334,7 @@ ALTER TABLE `teachers`
 -- ALTER TABLE `window_estimation_log`
 --   ADD CONSTRAINT `window_estimation_log_ibfk_1` FOREIGN KEY (`uid`) REFERENCES `users` (`uid`);
 -- COMMIT;
-
+select * from users;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
