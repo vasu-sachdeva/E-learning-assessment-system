@@ -212,6 +212,17 @@ def login():
 			return render_template('login.html', error=error)
 	return render_template('login.html')
 
+@app.route('/logout', methods=["GET", "POST"])
+def logout():
+	cur = mysql.connection.cursor()
+	lbr = cur.execute('UPDATE users set user_login = 0 where email = %s and uid = %s',(session['email'],session['uid']))
+	mysql.connection.commit()
+	if lbr > 0:
+		session.clear()
+		return "success"
+	else:
+		return "error"
+
 @app.route('/verifyEmail', methods=['GET','POST'])
 def verifyEmail():
 	if request.method == 'POST':
