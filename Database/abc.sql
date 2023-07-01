@@ -141,8 +141,10 @@ CREATE TABLE `users` (
   `user_type` varchar(25) COLLATE utf8mb4_unicode_ci NOT NULL,
   `user_login` tinyint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- INSERT INTO `quizapp`.`users`
+select * from users;
+-- UPDATE users set user_login = 0 where email = "20ucs111@lnmiit.ac.in" and uid ="1" ;
+-- UPDATE users set user_login = 0 where email = "manavjangid1410@gmail.com" and uid ="2" ;
+INSERT INTO `quizapp`.`users`
 -- (`uid`,
 -- `name`,
 -- `email`,
