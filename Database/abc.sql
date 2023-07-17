@@ -124,6 +124,7 @@ CREATE TABLE `teachers` (
   `uid` bigint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- INSERT INTO `teachers` (`tid`, `email`, `test_id`, `test_type`, `start`, `end`, `duration`, `show_ans`, `password`, `subject`, `topic`, `neg_marks`, `calc`, `proctoring_type`, `uid`)
+-- INSERT--  INTO `teachers` (`tid`, `email`, `test_id`, `test_type`, `start`, `end`, `duration`, `show_ans`, `password`, `subject`, `topic`, `neg_marks`, `calc`, `proctoring_type`, `uid`)
 -- VALUES (4, 'abc@abc.com', 'test123', 'objective', '2023-05-16 09:00:00', '2023-05-16 10:30:00', 90, 1, 'password123', 'Mathematics', 'Algebra', 1, 1, 0, 123456);
 
 -- --------------------------------------------------------
@@ -144,7 +145,7 @@ CREATE TABLE `users` (
 select * from users;
 -- UPDATE users set user_login = 0 where email = "20ucs111@lnmiit.ac.in" and uid ="1" ;
 -- UPDATE users set user_login = 0 where email = "manavjangid1410@gmail.com" and uid ="2" ;
-INSERT INTO `quizapp`.`users`
+-- INSERT INTO `quizapp`.`users`
 -- (`uid`,
 -- `name`,
 -- `email`,
@@ -154,6 +155,18 @@ INSERT INTO `quizapp`.`users`
 -- `user_login`)
 -- VALUES
 -- (0123,'Vasu','a@a.com','pass','student','adasdkjdhadkhksdhkjadhkjadhk',2);
+
+UPDATE users set user_login = 0 where email = '20ucs111@lnmiit.ac.in' or email = '20ucs224@lnmiit.ac.in' or email = '20ucs068@lnmiit.ac.in';
+
+INSERT INTO `quizapp`.`users`
+(`uid`,
+`name`,
+`email`,
+`password`,
+`user_type`,
+`user_login`)
+VALUES
+(123456,'Vasu','abc@abc.com','pass','professor',2);
 
 -- SELECT `questions`.`questions_uid`,
 --     `questions`.`test_id`,
@@ -340,6 +353,6 @@ select * from users;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-select distinct(students.test_id) as test_id, students.email as email, subject,topic,neg_marks from students,studenttestinfo,teachers where students.email = "abc@abc.com" and teachers.test_type = "objective" and students.test_id = "test123" and students.test_id=teachers.test_id and students.test_id=studenttestinfo.test_id and studenttestinfo.completed=1;
-select studenttestinfo.test_id as test_id from studenttestinfo,teachers where studenttestinfo.email = "abc@abc.com" and studenttestinfo.uid = "123456" and studenttestinfo.completed=1 and teachers.test_id = studenttestinfo.test_id and teachers.show_ans = 1 ;
-select @@password_history
+-- select distinct(students.test_id) as test_id, students.email as email, subject,topic,neg_marks from students,studenttestinfo,teachers where students.email = "abc@abc.com" and teachers.test_type = "objective" and students.test_id = "test123" and students.test_id=teachers.test_id and students.test_id=studenttestinfo.test_id and studenttestinfo.completed=1;
+-- select studenttestinfo.test_id as test_id from studenttestinfo,teachers where studenttestinfo.email = "abc@abc.com" and studenttestinfo.uid = "123456" and studenttestinfo.completed=1 and teachers.test_id = studenttestinfo.test_id and teachers.show_ans = 1 ;
+-- select @@password_history

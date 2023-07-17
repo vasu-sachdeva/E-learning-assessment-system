@@ -37,10 +37,15 @@ app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = 'quizapp'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
+
+with open('emailConfig.json') as file:
+    emailData = json.load(file)
+
+
 app.config['MAIL_SERVER']='smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = 'examproject2024@gmail.com'
-app.config['MAIL_PASSWORD'] = 'hhcgxhwwmhthepal'
+app.config['MAIL_USERNAME'] = emailData['email']
+app.config['MAIL_PASSWORD'] = emailData['password']
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
