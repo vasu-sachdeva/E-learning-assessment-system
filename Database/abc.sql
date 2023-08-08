@@ -6,6 +6,7 @@
 -- Generation Time: Aug 19, 2021 at 03:26 PM
 -- Server version: 5.5.22
 -- PHP Version: 8.0.2
+
 create database quizapp;
 use quizapp;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -109,9 +110,9 @@ CREATE TABLE `teachers` (
   `proctoring_type` tinyint NOT NULL DEFAULT '0',
   `uid` bigint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `teachers` (`tid`, `email`, `test_id`, `test_type`, `start`, `end`, `duration`, `show_ans`, `password`, `subject`, `topic`, `neg_marks`, `calc`, `proctoring_type`, `uid`)
-VALUES (4, 'abc@abc.com', 'test123', 'objective', '2023-05-16 09:00:00', '2023-05-16 10:30:00', 90, 1, 'password123', 'Mathematics', 'Algebra', 1, 1, 0, 123456);
-
+-- INSERT INTO `teachers` (`tid`, `email`, `test_id`, `test_type`, `start`, `end`, `duration`, `show_ans`, `password`, `subject`, `topic`, `neg_marks`, `calc`, `proctoring_type`, `uid`)
+-- VALUES (4, 'abc@abc.com', 'test123', 'objective', '2023-05-16 09:00:00', '2023-05-16 10:30:00', 90, 1, 'password123', 'Mathematics', 'Algebra', 1, 1, 0, 123456);
+select * from users;
 -- --------------------------------------------------------
 --
 -- Table structure for table `users`

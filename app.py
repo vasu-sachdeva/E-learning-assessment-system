@@ -26,7 +26,7 @@ from flask_session import Session
 from flask_cors import CORS, cross_origin
 # import camera
 from deepface import DeepFace
-from gaze_tracking.gaze_tracking import GazeTracking
+# from gaze_tracking.gaze_tracking import GazeTracking
 
 app = Flask(__name__)
 
