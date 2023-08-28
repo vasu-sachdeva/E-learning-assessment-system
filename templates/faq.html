@@ -1,0 +1,118 @@
+{% extends 'layout.html' %} {% block body %}
+<main>
+  <section class="d-flex align-items-center my-5 mt-lg-6 mb-lg-5">
+    <div class="container">
+      <div class="col-12 d-flex align-items-center justify-content-center">
+        <div class="bg-white p-4 p-lg-5 w-100 fmxw-1000">
+          <div class="text-center text-md-center mb-4 mt-md-0">
+            <h1 class="mb-0 h3">FAQ's</h1>
+          </div>
+          <img src="{{ url_for('static', filename='questions_desc.png') }}" />
+          <div class="accordion" id="accordionExample1">
+            <div class="card card-sm card-body border-light mb-0">
+              <a
+                href="#panel-3"
+                data-target="#panel-3"
+                class="accordion-panel-header"
+                data-toggle="collapse"
+                role="button"
+                aria-expanded="false"
+                aria-controls="panel-3"
+              >
+                <span class="h6 mb-0 font-weight-bold"
+                  >Proctoring Process FAQs</span
+                >
+                <span class="icon"><i class="fas fa-plus"></i></span>
+              </a>
+              <div class="collapse" id="panel-3">
+                <div class="card-body">
+                  <div class="qanda">
+                    <h5>
+                      What do your proctors watch during an exam or in the
+                      professional review process?
+                    </h5>
+                    <hr />
+                    <p>
+                      We're looking for potential aberrant behavior during exams
+                      such as looking off screen, accessing unpermitted
+                      materials, speaking aloud, or allowing other people in the
+                      room. Additionally, we use technology solutions to assist
+                      proctors in identifying activities that may warrant
+                      further inspection.
+                    </p>
+                  </div>
+                  <div class="qanda">
+                    <h5>How does technology help the human proctor?</h5>
+                    <hr />
+                    <p>
+                      Humans are good at detecting aberrant behavior, however,
+                      there are a few behaviors that can be missed. Technology
+                      solutions help our human proctors identify activities that
+                      might violate the test provider’s integrity requirements.
+                      All technology alerts must be verified by a human proctor
+                      or an exam administrator.
+                    </p>
+                  </div>
+
+                  <div class="qanda">
+                    <h5>Do I have to review exam sessions?</h5>
+                    <hr />
+                    <p>
+                      If you’re using our Live+ or Review+ service, our
+                      professional proctors will send a report of the sessions
+                      that need your attention. If you’re using our Record+
+                      service, the exam administrator is responsible for
+                      reviewing every session so you know whether anyone broke
+                      exam rules.
+                    </p>
+                  </div>
+                  <div class="qanda">
+                    <h5>Can you proctor paper and pencil exams?</h5>
+                    <hr />
+                    <p>
+                      We no longer proctor paper-based exams, but we can help
+                      you find a test delivery system to transition your program
+                      online.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card card-sm card-body border-light">
+              <a
+                href="#panel-4"
+                data-target="#panel-4"
+                class="accordion-panel-header"
+                data-toggle="collapse"
+                role="button"
+                aria-expanded="false"
+                aria-controls="panel-4"
+              >
+                <span class="h6 mb-0 font-weight-bold">Support FAQs</span>
+                <span class="icon"><i class="fas fa-plus"></i></span>
+              </a>
+              <div class="collapse" id="panel-4">
+                <div class="card-body">
+                  <div class="qanda">
+                    <h5>What kind of technical assistance do you provide?</h5>
+                    <hr />
+                    <p>
+                      Technical and administrative support is available 24/7 by
+                      calling 1-855-772-8678, emailing
+                      <a href="mailto:care@narenderkeswani.com"
+                        >care@narenderkeswani.com</a
+                      >
+                      or by contacting on phone <a href="tel:9320907041"></a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
