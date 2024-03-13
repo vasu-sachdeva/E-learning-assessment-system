@@ -6,7 +6,6 @@
 -- Generation Time: Aug 19, 2021 at 03:26 PM
 -- Server version: 5.5.22
 -- PHP Version: 8.0.2
-
 create database quizapp;
 use quizapp;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -42,6 +41,9 @@ CREATE TABLE `proctoring_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 -- --------------------------------------------------------
 --
+
+select * from users;
+update users set user_login = 0 where uid = 1 or uid =2;
 -- Table structure for table `questions`
 --
 -- questions_uid is set as auto_increament in seperate code below afterwards 
@@ -112,7 +114,7 @@ CREATE TABLE `teachers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- INSERT INTO `teachers` (`tid`, `email`, `test_id`, `test_type`, `start`, `end`, `duration`, `show_ans`, `password`, `subject`, `topic`, `neg_marks`, `calc`, `proctoring_type`, `uid`)
 -- VALUES (4, 'abc@abc.com', 'test123', 'objective', '2023-05-16 09:00:00', '2023-05-16 10:30:00', 90, 1, 'password123', 'Mathematics', 'Algebra', 1, 1, 0, 123456);
-select * from users;
+
 -- --------------------------------------------------------
 --
 -- Table structure for table `users`
@@ -125,11 +127,17 @@ CREATE TABLE `users` (
   `password` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `register_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `user_type` varchar(25) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_image` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `user_login` tinyint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
-
+-- select * from users;
+-- select * from teachers;
+-- delete from questions where questions_uid>=1 or questions_uid<=48;
+-- update users set user_login=0 where uid = 123457 or uid = 123459;
+-- delete from users where uid = 123457 or uid = 123459;
+-- truncate questions;
 --
 -- Table structure for table `window_estimation_log`
 --
@@ -285,6 +293,6 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-select distinct(students.test_id) as test_id, students.email as email, subject,topic,neg_marks from students,studenttestinfo,teachers where students.email = "abc@abc.com" and teachers.test_type = "objective" and students.test_id = "test123" and students.test_id=teachers.test_id and students.test_id=studenttestinfo.test_id and studenttestinfo.completed=1;
-select studenttestinfo.test_id as test_id from studenttestinfo,teachers where studenttestinfo.email = "abc@abc.com" and studenttestinfo.uid = "123456" and studenttestinfo.completed=1 and teachers.test_id = studenttestinfo.test_id and teachers.show_ans = 1 ;
-select @@password_history
+-- select distinct(students.test_id) as test_id, students.email as email, subject,topic,neg_marks from students,studenttestinfo,teachers where students.email = "abc@abc.com" and teachers.test_type = "objective" and students.test_id = "test123" and students.test_id=teachers.test_id and students.test_id=studenttestinfo.test_id and studenttestinfo.completed=1;
+-- select studenttestinfo.test_id as test_id from studenttestinfo,teachers where studenttestinfo.email = "abc@abc.com" and studenttestinfo.uid = "123456" and studenttestinfo.completed=1 and teachers.test_id = studenttestinfo.test_id and teachers.show_ans = 1 ;
+-- select @@password_history

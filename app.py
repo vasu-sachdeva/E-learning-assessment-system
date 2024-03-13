@@ -1,7 +1,3 @@
-#Durvesh -- 18:42 25/06/2023
-#Manav -- 18:42 25/06/2023
-#Vasu
-
 from ultralytics import YOLO
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash,session, redirect
 from flask_mysqldb import MySQL
@@ -26,7 +22,7 @@ from flask_session import Session
 from flask_cors import CORS, cross_origin
 # import camera
 from deepface import DeepFace
-# from gaze_tracking.gaze_tracking import GazeTracking
+from gaze_tracking.gaze_tracking import GazeTracking
 
 app = Flask(__name__)
 
@@ -142,6 +138,11 @@ class UploadForm(FlaskForm):
 
 @app.route("/")
 def index():
+	if 'email' in session:
+		print(session)
+		if session['user_role']=="student":
+			return redirect(url_for('student_index'))
+		return redirect(url_for('professor_index'))
 	return render_template('index.html', messages = 'My name is proctor')
 
 def generateOTP() : 
@@ -158,12 +159,12 @@ def register():
 		email = request.form['email']
 		password = request.form['password']
 		user_type = request.form['user_type']
-		# imgdata = request.form['image_hidden']
+		imgdata = request.form['image_hidden']
 		session['tempName'] = name
 		session['tempEmail'] = email
 		session['tempPassword'] = password
 		session['tempUT'] = user_type
-		# session['tempImage'] = imgdata
+		session['tempImage'] = imgdata
 		sesOTP = generateOTP()
 		session['tempOTP'] = sesOTP
 		msg1 = Message('E-Learning Assessment System - OTP Verification', sender = sender, recipients = [email])
@@ -178,22 +179,22 @@ def login():
 		email = request.form['email']
 		password_candidate = request.form['password']
 		user_type = request.form['user_type']
-		# imgdata1 = request.form['image_hidden']
+		imgdata1 = request.form['image_hidden']
 		cur = mysql.connection.cursor()
-		# results1 = cur.execute('SELECT uid, name, email, password, user_type, user_image from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
-		results1 = cur.execute('SELECT uid, name, email, password, user_type from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
+		results1 = cur.execute('SELECT uid, name, email, password, user_type, user_image from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
+		# results1 = cur.execute('SELECT uid, name, email, password, user_type from users where email = %s and user_type = %s and user_login = 0' , (email,user_type))
 		if results1 > 0:
 			cresults = cur.fetchone()
-			# imgdata2 = cresults['user_image']
+			imgdata2 = cresults['user_image']
 			password = cresults['password']
 			name = cresults['name']
 			uid = cresults['uid']
-			# nparr1 = np.frombuffer(base64.b64decode(imgdata1), np.uint8)
-			# nparr2 = np.frombuffer(base64.b64decode(imgdata2), np.uint8)
-			# image1 = cv2.imdecode(nparr1, cv2.COLOR_BGR2GRAY)
-			# image2 = cv2.imdecode(nparr2, cv2.COLOR_BGR2GRAY)
-			# img_result  = DeepFace.verify(image1, image2, enforce_detection = False)
-			if password == password_candidate:
+			nparr1 = np.frombuffer(base64.b64decode(imgdata1), np.uint8)
+			nparr2 = np.frombuffer(base64.b64decode(imgdata2), np.uint8)
+			image1 = cv2.imdecode(nparr1, cv2.COLOR_BGR2GRAY)
+			image2 = cv2.imdecode(nparr2, cv2.COLOR_BGR2GRAY)
+			img_result  = DeepFace.verify(image1, image2, enforce_detection = False)
+			if img_result["verified"] == True and password == password_candidate:
 				results2 = cur.execute('UPDATE users set user_login = 1 where email = %s' , [email])
 				mysql.connection.commit()
 				cur.close()
@@ -211,7 +212,7 @@ def login():
 					error = 'Error Occurred!'
 					return render_template('login.html', error=error)	
 			else:
-				error = 'You have entered Invalid password or Already login'
+				error = 'Image not Verified or password is incorrect'
 				return render_template('login.html', error=error)
 			
 		else:
@@ -229,10 +230,10 @@ def verifyEmail():
 			dbEmail = session['tempEmail']
 			dbPassword = session['tempPassword']
 			dbUser_type = session['tempUT']
-			# dbImgdata = session['tempImage']
+			dbImgdata = session['tempImage']
 			if(theOTP == mOTP):
 				cur = mysql.connection.cursor()
-				ar = cur.execute('INSERT INTO users(name, email, password, user_type, user_login) values(%s,%s,%s,%s,%s)', (dbName, dbEmail, dbPassword, dbUser_type, 0))
+				ar = cur.execute('INSERT INTO users(name, email, password, user_type, user_image, user_login) values(%s,%s,%s,%s,%s,%s)', (dbName, dbEmail, dbPassword, dbUser_type, dbImgdata, 0))
 				mysql.connection.commit()
 				cur.close()
 				session.clear()
@@ -255,11 +256,47 @@ def logout():
 	cur = mysql.connection.cursor()
 	lbr = cur.execute('UPDATE users set user_login = 0 where email = %s and uid = %s',(session['email'],session['uid']))
 	mysql.connection.commit()
+	session.clear()
 	if lbr > 0:
-		session.clear()
+		# print(session['email']+" Logout")
 		return "success"
 	else:
 		return "error"
+
+@app.route('/contact', methods=['GET','POST'])
+def contact():
+	if request.method == 'POST':
+		careEmail = "narender.rk10@gmail.com"
+		cname = request.form['cname']
+		cemail = request.form['cemail']
+		cquery = request.form['cquery']
+		msg1 = Message('Hello', sender = sender, recipients = [cemail])
+		msg2 = Message('Hello', sender = sender, recipients = [careEmail])
+		msg1.body = "YOUR QUERY WILL BE PROCESSED! WITHIN 24 HOURS"
+		msg2 = Message('Hello', sender = sender, recipients = [careEmail])
+		msg2.body = " ".join(["NAME:", cname, "EMAIL:", cemail, "QUERY:", cquery]) 
+		mail.send(msg1)
+		mail.send(msg2)
+		flash('Your Query has been recorded.', 'success')
+	return render_template('contact.html')
+
+@app.route('/lostpassword', methods=['GET','POST'])
+def lostpassword():
+	if request.method == 'POST':
+		lpemail = request.form['lpemail']
+		cur = mysql.connection.cursor()
+		results = cur.execute('SELECT * from users where email = %s' , [lpemail])
+		if results > 0:
+			sesOTPfp = generateOTP()
+			session['tempOTPfp'] = sesOTPfp
+			session['seslpemail'] = lpemail
+			msg1 = Message('MyProctor.ai - OTP Verification for Lost Password', sender = sender, recipients = [lpemail])
+			msg1.body = "Your OTP Verfication code for reset password is "+sesOTPfp+"."
+			mail.send(msg1)
+			return redirect(url_for('verifyOTPfp')) 
+		else:
+			return render_template('lostpassword.html',error="Account not found.")
+	return render_template('lostpassword.html')
 
 @app.route("/professor_index")
 @user_role_professor
@@ -620,6 +657,92 @@ def student_test_history(email):
 		return redirect(url_for('student_index'))
 
 
+# @app.route("/give-test", methods = ['GET', 'POST'])
+# @user_role_student
+# def give_test():
+# 	global duration, marked_ans, calc, subject, topic, proctortype
+# 	form = TestForm(request.form)
+# 	if request.method == 'POST' and form.validate():
+# 		test_id = form.test_id.data
+# 		password_candidate = form.password.data
+# 		imgdata1 = form.img_hidden_form.data
+# 		cur = mysql.connection.cursor()
+# 		results = cur.execute('SELECT * from teachers where test_id = %s', [test_id])
+# 		if results > 0:
+# 			data = cur.fetchone()
+# 			password = data['password']
+# 			duration = data['duration']
+# 			calc = data['calc']
+# 			subject = data['subject']
+# 			topic = data['topic']
+# 			start = data['start']
+# 			start = str(start)
+# 			end = data['end']
+# 			end = str(end)
+# 			# proctortype = data['proctoring_type']
+# 			# print(test_id)
+# 			if password == password_candidate:
+# 				now = datetime.now()
+# 				now = now.strftime("%Y-%m-%d %H:%M:%S")
+# 				now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
+# 				if datetime.strptime(start,"%Y-%m-%d %H:%M:%S") < now and datetime.strptime(end,"%Y-%m-%d %H:%M:%S") > now:
+# 					results = cur.execute('SELECT time_to_sec(time_left) as time_left,completed from studentTestInfo where email = %s and test_id = %s', (session['email'], test_id))
+# 					if results > 0:
+# 						results = cur.fetchone()
+# 						# print(results)
+# 						is_completed = results['completed']
+# 						if is_completed == 0:
+# 							time_left = results['time_left']
+# 							if time_left <= duration:
+# 								duration = time_left
+# 								results = cur.execute('SELECT qid , ans from students where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
+# 								marked_ans = {}
+# 								if results > 0:
+# 									results = cur.fetchall()
+# 									for row in results:
+# 										# print(row['qid'])
+# 										qiddb = ""+row['qid']
+# 										# print(qiddb)
+# 										# print(type(marked_ans))
+# 										marked_ans[qiddb] = row['ans']
+# 									marked_ans = json.dumps(marked_ans)
+# 						else:
+# 							flash('Exam already given', 'success')
+# 							return redirect(url_for('give_test'))
+# 					else:
+# 						cur.execute('INSERT into studentTestInfo (email, test_id,time_left,uid) values(%s,%s,SEC_TO_TIME(%s),%s)', (session['email'], test_id, duration, session['uid']))
+# 						mysql.connection.commit()
+# 						results = cur.execute('SELECT time_to_sec(time_left) as time_left,completed from studentTestInfo where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
+# 						if results > 0:
+# 							results = cur.fetchone()
+# 							is_completed = results['completed']
+# 							if is_completed == 0:
+# 								time_left = results['time_left']
+# 								if time_left <= duration:
+# 									duration = time_left
+# 									results = cur.execute('SELECT * from students where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
+# 									marked_ans = {}
+# 									if results > 0:
+# 										results = cur.fetchall()
+# 										for row in results:
+# 											marked_ans[row['qid']] = row['ans']
+# 										marked_ans = json.dumps(marked_ans)
+# 				else:
+# 					if datetime.strptime(start,"%Y-%m-%d %H:%M:%S") > now:
+# 						flash(f'Exam start time is {start}', 'danger')
+# 					else:
+# 						flash(f'Exam has ended', 'danger')
+# 					return redirect(url_for('give_test'))
+# 				return redirect(url_for('test' , testid = test_id))
+# 			else:
+# 				flash('Invalid password', 'danger')
+# 				return redirect(url_for('give_test'))
+# 		flash('Invalid testid', 'danger')
+# 		cur.close()
+# 		return redirect(url_for('give_test'))
+# 	return render_template('give_test.html', form = form)
+
+
 @app.route("/give-test", methods = ['GET', 'POST'])
 @user_role_student
 def give_test():
@@ -628,81 +751,95 @@ def give_test():
 	if request.method == 'POST' and form.validate():
 		test_id = form.test_id.data
 		password_candidate = form.password.data
-		cur = mysql.connection.cursor()
-		results = cur.execute('SELECT * from teachers where test_id = %s', [test_id])
-		if results > 0:
-			data = cur.fetchone()
-			password = data['password']
-			duration = data['duration']
-			calc = data['calc']
-			subject = data['subject']
-			topic = data['topic']
-			start = data['start']
-			start = str(start)
-			end = data['end']
-			end = str(end)
-			# proctortype = data['proctoring_type']
-			# print(test_id)
-			if password == password_candidate:
-				now = datetime.now()
-				now = now.strftime("%Y-%m-%d %H:%M:%S")
-				now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
-				if datetime.strptime(start,"%Y-%m-%d %H:%M:%S") < now and datetime.strptime(end,"%Y-%m-%d %H:%M:%S") > now:
-					results = cur.execute('SELECT time_to_sec(time_left) as time_left,completed from studentTestInfo where email = %s and test_id = %s', (session['email'], test_id))
-					if results > 0:
-						results = cur.fetchone()
-						# print(results)
-						is_completed = results['completed']
-						if is_completed == 0:
-							time_left = results['time_left']
-							if time_left <= duration:
-								duration = time_left
-								results = cur.execute('SELECT qid , ans from students where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
-								marked_ans = {}
+		imgdata1 = form.img_hidden_form.data
+		cur1 = mysql.connection.cursor()
+		results1 = cur1.execute('SELECT user_image from users where email = %s and user_type = %s ', (session['email'],'student'))
+		if results1 > 0:
+			cresults = cur1.fetchone()
+			imgdata2 = cresults['user_image']
+			cur1.close()
+			nparr1 = np.frombuffer(base64.b64decode(imgdata1), np.uint8)
+			nparr2 = np.frombuffer(base64.b64decode(imgdata2), np.uint8)
+			image1 = cv2.imdecode(nparr1, cv2.COLOR_BGR2GRAY)
+			image2 = cv2.imdecode(nparr2, cv2.COLOR_BGR2GRAY)
+			img_result  = DeepFace.verify(image1, image2, enforce_detection = False)
+			if img_result["verified"] == True:
+				cur = mysql.connection.cursor()
+				results = cur.execute('SELECT * from teachers where test_id = %s', [test_id])
+				if results > 0:
+					data = cur.fetchone()
+					password = data['password']
+					duration = data['duration']
+					calc = data['calc']
+					subject = data['subject']
+					topic = data['topic']
+					start = data['start']
+					start = str(start)
+					end = data['end']
+					end = str(end)
+					proctortype = data['proctoring_type']
+					if password == password_candidate:
+						now = datetime.now()
+						now = now.strftime("%Y-%m-%d %H:%M:%S")
+						now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
+						if datetime.strptime(start,"%Y-%m-%d %H:%M:%S") < now and datetime.strptime(end,"%Y-%m-%d %H:%M:%S") > now:
+							results = cur.execute('SELECT time_to_sec(time_left) as time_left,completed from studentTestInfo where email = %s and test_id = %s', (session['email'], test_id))
+							if results > 0:
+								results = cur.fetchone()
+								is_completed = results['completed']
+								if is_completed == 0:
+									time_left = results['time_left']
+									if time_left <= duration:
+										duration = time_left
+										results = cur.execute('SELECT qid , ans from students where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
+										marked_ans = {}
+										if results > 0:
+											results = cur.fetchall()
+											for row in results:
+												print(row['qid'])
+												qiddb = ""+row['qid']
+												print(qiddb)
+												marked_ans[qiddb] = row['ans']
+												marked_ans = json.dumps(marked_ans)
+								else:
+									flash('Exam already given', 'success')
+									return redirect(url_for('give_test'))
+							else:
+								cur.execute('INSERT into studentTestInfo (email, test_id,time_left,uid) values(%s,%s,SEC_TO_TIME(%s),%s)', (session['email'], test_id, duration, session['uid']))
+								mysql.connection.commit()
+								results = cur.execute('SELECT time_to_sec(time_left) as time_left,completed from studentTestInfo where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
 								if results > 0:
-									results = cur.fetchall()
-									for row in results:
-										# print(row['qid'])
-										qiddb = ""+row['qid']
-										# print(qiddb)
-										# print(type(marked_ans))
-										marked_ans[qiddb] = row['ans']
-									marked_ans = json.dumps(marked_ans)
+									results = cur.fetchone()
+									is_completed = results['completed']
+									if is_completed == 0:
+										time_left = results['time_left']
+										if time_left <= duration:
+											duration = time_left
+											results = cur.execute('SELECT * from students where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
+											marked_ans = {}
+											if results > 0:
+												results = cur.fetchall()
+												for row in results:
+													marked_ans[row['qid']] = row['ans']
+												marked_ans = json.dumps(marked_ans)
 						else:
-							flash('Exam already given', 'success')
+							if datetime.strptime(start,"%Y-%m-%d %H:%M:%S") > now:
+								flash(f'Exam start time is {start}', 'danger')
+							else:
+								flash(f'Exam has ended', 'danger')
 							return redirect(url_for('give_test'))
+						return redirect(url_for('test' , testid = test_id))
 					else:
-						cur.execute('INSERT into studentTestInfo (email, test_id,time_left,uid) values(%s,%s,SEC_TO_TIME(%s),%s)', (session['email'], test_id, duration, session['uid']))
-						mysql.connection.commit()
-						results = cur.execute('SELECT time_to_sec(time_left) as time_left,completed from studentTestInfo where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
-						if results > 0:
-							results = cur.fetchone()
-							is_completed = results['completed']
-							if is_completed == 0:
-								time_left = results['time_left']
-								if time_left <= duration:
-									duration = time_left
-									results = cur.execute('SELECT * from students where email = %s and test_id = %s and uid = %s', (session['email'], test_id, session['uid']))
-									marked_ans = {}
-									if results > 0:
-										results = cur.fetchall()
-										for row in results:
-											marked_ans[row['qid']] = row['ans']
-										marked_ans = json.dumps(marked_ans)
-				else:
-					if datetime.strptime(start,"%Y-%m-%d %H:%M:%S") > now:
-						flash(f'Exam start time is {start}', 'danger')
-					else:
-						flash(f'Exam has ended', 'danger')
-					return redirect(url_for('give_test'))
-				return redirect(url_for('test' , testid = test_id))
-			else:
-				flash('Invalid password', 'danger')
+						flash('Invalid password', 'danger')
+						return redirect(url_for('give_test'))
+				flash('Invalid testid', 'danger')
 				return redirect(url_for('give_test'))
-		flash('Invalid testid', 'danger')
-		cur.close()
-		return redirect(url_for('give_test'))
+				cur.close()
+			else:
+				flash('Image not Verified', 'danger')
+				return redirect(url_for('give_test'))
 	return render_template('give_test.html', form = form)
+
 
 @app.route('/give-test/<testid>', methods=['GET','POST'])
 @user_role_student
